@@ -1,168 +1,102 @@
 # Copyright (c) 2011, Christian Rorvik
 # Distributed under the Simplified BSD License (See accompanying file LICENSE.txt)
 
-cmake_minimum_required(VERSION 2.8)
+include(configure.cmake)
 
-#
-# Compiler flags
-#
-if(MSVC)
-  add_definitions("-D_WIN32_WINNT=0x0501")
-  add_definitions("-DNOMINMAX")
-  add_definitions("-Dnoexcept=throw()")
-  add_definitions("-D_SCL_SECURE_NO_WARNINGS")
+if(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "x86" OR
+    ${CMAKE_SYSTEM_PROCESSOR} STREQUAL "x86_64")
+  set(_platformFiles
+    include/crunch/concurrency/platform/${PLATFORM_NAME}/atomic.hpp
+    include/crunch/concurrency/platform/${PLATFORM_NAME}/atomic_ops_x86.hpp
+    include/crunch/concurrency/platform/${PLATFORM_NAME}/atomic_storage.hpp
+    include/crunch/concurrency/platform/${PLATFORM_NAME}/atomic_word.hpp)
+endif()
+    
+vpm_add_library(crunch_concurrency_lib
+  include/crunch/concurrency/atomic.hpp
+  include/crunch/concurrency/event.hpp
+  include/crunch/concurrency/exceptions.hpp
+  include/crunch/concurrency/fence.hpp
+  include/crunch/concurrency/future.hpp
+  include/crunch/concurrency/lock_free_slist.hpp
+  include/crunch/concurrency/lock_guard.hpp
+  include/crunch/concurrency/memory_order.hpp
+  include/crunch/concurrency/meta_scheduler.hpp
+  include/crunch/concurrency/mutex.hpp
+  include/crunch/concurrency/processor_affinity.hpp
+  include/crunch/concurrency/processor_topology.hpp
+  include/crunch/concurrency/promise.hpp
+  include/crunch/concurrency/semaphore.hpp
+  include/crunch/concurrency/scheduler.hpp
+  include/crunch/concurrency/thread.hpp
+  include/crunch/concurrency/thread_local.hpp
+  include/crunch/concurrency/wait_mode.hpp
+  include/crunch/concurrency/waitable.hpp
+  include/crunch/concurrency/waiter.hpp
+  include/crunch/concurrency/waiter_utility.hpp
+  include/crunch/concurrency/yield.hpp
+  include/crunch/concurrency/detail/future_data.hpp
+  include/crunch/concurrency/detail/system_condition.hpp
+  include/crunch/concurrency/detail/system_event.hpp
+  include/crunch/concurrency/detail/system_mutex.hpp
+  include/crunch/concurrency/detail/system_semaphore.hpp
+  include/crunch/concurrency/detail/waiter_list.hpp
+  source/event.cpp
+  source/exceptions.cpp
+  source/future_data.cpp
+  source/meta_scheduler.cpp
+  source/mutex.cpp
+  source/processor_affinity.cpp
+  source/processor_topology.cpp
+  source/semaphore.cpp
+  source/thread.cpp
+  source/thread_data.hpp
+  source/thread_data.cpp
+  source/waiter.cpp
+  source/waiter_list.cpp
+  source/platform/${PLATFORM_NAME}/processor_affinity.cpp
+  source/platform/${PLATFORM_NAME}/processor_topology.cpp
+  source/platform/${PLATFORM_NAME}/system_condition.cpp
+  source/platform/${PLATFORM_NAME}/system_event.cpp
+  source/platform/${PLATFORM_NAME}/system_mutex.cpp
+  source/platform/${PLATFORM_NAME}/system_semaphore.cpp
+  source/platform/${PLATFORM_NAME}/thread.cpp
+  source/platform/${PLATFORM_NAME}/yield.cpp
+  ${_platformFiles})
 
-  # Enable parallel compilation
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
+target_link_libraries(crunch_concurrency_lib
+  crunch_base_lib
+  crunch_containers_lib)
 
-  # Set warning level to highest
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4")
-
-  # Disable buffer security checks
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /GS-")
-  
-  # Enable reasonable inlining in Release With Debug Info
-  set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} /Ob2")
-  
-  # Enable intrinsics
-  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /Oi")
-  
-  # Enable floating point optimizations (for all configurations)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /fp:fast") 
-  
-  # Link time code gen
-  # No way to set library linker flags at the moment. Disabling for now.
-  # set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /GL")
-  # set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /LTCG")
-  
-  # Disable some warnings
-  # warning C4480: nonstandard extension used: specifying underlying type for enum 'Crunch::CpuidFunction'
-  # warning C4481: nonstandard extension used: override specifier 'override'
-  # warning C4482: nonstandard extension used: enum 'Crunch::CpuidFunction' used in qualified name
-  # warning C4127: conditional expression is constant 
-  # (boost utf) warning C4535: calling _set_se_translator() requires /EHa
-  # (boost utf) warning C4702: unreachable code
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4480 /wd4481 /wd4482 /wd4127 /wd4535 /wd4702")
-
-  # Enable static analysis warnings
-  if (${CMAKE_SIZEOF_VOID_P} EQUAL 4)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /analyze")
-    # (boost headers) warning C6326: Potential comparison of a constant with another constant
-    # warning C6334: sizeof operator applied to an expression with an operator might yield unexpected results
-    # warning C6255: _alloca indicates failure by raising a stack overflow exception. Consider using _malloca instead
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd6326 /wd6334 /wd6255")
-  endif()
-else()
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
-  if (${CMAKE_SIZEOF_VOID_P} EQUAL 8)
-    # Enable cmpxchg16
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mcx16")
-  endif()
+if(UNIX)
+  target_link_libraries(crunch_concurrency_lib
+    pthread)
 endif()
 
-#
-# Platform properties
-#
-if(WIN32)
-  set(PLATFORM_NAME "win32")
-elseif(UNIX)
-  set(PLATFORM_NAME "linux")
-else()
-  message(FATAL_ERROR "Unknown platform")
-endif()
+add_executable(crunch_concurrency_test
+  test/atomic_tests.cpp
+  test/event_tests.cpp
+  test/future_tests.cpp
+  test/meta_scheduler_tests.cpp
+  test/mutex_tests.cpp
+  test/processor_topology_tests.cpp
+  test/semaphore_tests.cpp
+  test/thread_tests.cpp)
 
-#
-# Install configuration
-#
-set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/stage/")
-set(CMAKE_DEBUG_POSTFIX "_d")
-set(CMAKE_RELEASE_POSTFIX "_r")
-set(CMAKE_RELWITHDEBINFO_POSTFIX "_rd")
-set(CMAKE_MINSIZEREL_POSTFIX "_rs")
+target_link_libraries(crunch_concurrency_test
+  crunch_concurrency_lib
+  crunch_test_lib
+  ${Boost_LIBRARIES})
 
-#
-# Wrappers around target macros
-#
-macro(crunch_add_library _name)
-  add_library(${_name} ${ARGN})
-  if (${CMAKE_SIZEOF_VOID_P} EQUAL 8)
-    set(_libdir "lib64")
-  else()
-    set(_libdir "lib32")
-  endif()
-  install(TARGETS ${_name} DESTINATION "${_libdir}")
-endmacro()
+crunch_add_test(crunch_concurrency_test)
 
-#
-# boost package
-#
-set(Boost_USE_STATIC_LIBS ON)
-set(Boost_USE_MULTITHREADED ON)
-set(Boost_USE_STATIC_RUNTIME OFF)
-# Work around issue with simultaneous 32 and 64 bit boost installs
-if(WIN32)
-  set(_root "$ENV{BOOST_ROOT}")
-  if(_root STREQUAL "")
-    set(BOOST_ROOT "c:/boost/boost_1_46_1")
-    set(_root "C:/boost/boost_1_46_1")
-  endif()
-  set(BOOST_INCLUDEDIR "${_root}/boost")
-  if(${CMAKE_SIZEOF_VOID_P} EQUAL 8)
-    set(BOOST_LIBRARYDIR "${_root}/lib64")
-  else()
-    set(BOOST_LIBRARYDIR "${_root}/lib32")
-  endif()
-endif()
-find_package(Boost COMPONENTS thread date_time)
-if(NOT Boost_FOUND)
-  message(WARNING "boost not found. Disabling unit tests and benchmarks")
-else()
-  include_directories(${Boost_INCLUDE_DIRS})
-endif()
+add_executable(crunch_concurrency_benchmark
+  benchmark/atomic_benchmarks.cpp
+  benchmark/event_benchmarks.cpp
+  benchmark/meta_scheduler_benchmarks.cpp)
 
-#
-# tests
-#
-add_definitions(-DBOOST_TEST_ALTERNATIVE_INIT_API)
+target_link_libraries(crunch_concurrency_benchmark
+  crunch_benchmarking_lib
+  crunch_concurrency_lib)
 
-macro(crunch_add_test _name)
-  add_custom_target("run-${_name}"
-    ALL
-    ${_name} "--log_level=message"
-    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-    VERBATIM)
-endmacro()
-
-macro(crunch_add_benchmark _name)
-  add_custom_target("run-${_name}"
-    ${_name}
-    WORKING_DIRECTORY ${CMAKE_CURRENTY_BINARY_DIR}
-    VERBATIM)
-endmacro()
-
-#
-# libraries and executables
-#
-set(PROJECTS
-  cpuinfo
-  crunch_base
-  crunch_benchmarking
-  crunch_concurrency
-  crunch_concurrency_tasks
-  crunch_containers
-  crunch_test)
-  
-foreach(_p ${PROJECTS})
-  include_directories("${CMAKE_SOURCE_DIR}/${_p}/include")
-endforeach()
-
-foreach(_p ${PROJECTS})
-  add_subdirectory(${_p})
-endforeach()
-
-foreach(_p ${PROJECTS})
-  if (EXISTS "${CMAKE_SOURCE_DIR}/${_p}/include")
-    install(DIRECTORY "${_p}/include/" DESTINATION "include")
-  endif()
-endforeach()
-
+crunch_add_benchmark(crunch_concurrency_benchmark)

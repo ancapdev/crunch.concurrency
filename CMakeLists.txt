@@ -3,6 +3,10 @@
 
 include(configure.cmake)
 
+vpm_depend(
+  crunch_benchmarking
+  crunch_test)
+
 if(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "x86" OR
     ${CMAKE_SYSTEM_PROCESSOR} STREQUAL "x86_64")
   set(_platformFiles

@@ -3,10 +3,6 @@
 
 include(configure.cmake)
 
-vpm_depend(
-  crunch.benchmarking
-  crunch.test)
-
 if(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "x86" OR
     ${CMAKE_SYSTEM_PROCESSOR} STREQUAL "x86_64")
   set(_platformFiles
@@ -77,30 +73,38 @@ if(UNIX)
     pthread)
 endif()
 
-add_executable(crunch_concurrency_test
-  test/atomic_tests.cpp
-  test/event_tests.cpp
-  test/future_tests.cpp
-  test/meta_scheduler_tests.cpp
-  test/mutex_tests.cpp
-  test/processor_topology_tests.cpp
-  test/semaphore_tests.cpp
-  test/thread_tests.cpp)
+if(NOT CRUNCH_NO_TESTS)
+  vpm_depend(crunch.test)
 
-target_link_libraries(crunch_concurrency_test
-  crunch_concurrency_lib
-  crunch_test_lib
-  ${Boost_LIBRARIES})
+  add_executable(crunch_concurrency_test
+    test/atomic_tests.cpp
+    test/event_tests.cpp
+    test/future_tests.cpp
+    test/meta_scheduler_tests.cpp
+    test/mutex_tests.cpp
+    test/processor_topology_tests.cpp
+    test/semaphore_tests.cpp
+    test/thread_tests.cpp)
 
-crunch_add_test(crunch_concurrency_test)
+  target_link_libraries(crunch_concurrency_test
+    crunch_concurrency_lib
+    crunch_test_lib
+    ${Boost_LIBRARIES})
 
-add_executable(crunch_concurrency_benchmark
-  benchmark/atomic_benchmarks.cpp
-  benchmark/event_benchmarks.cpp
-  benchmark/meta_scheduler_benchmarks.cpp)
+  crunch_add_test(crunch_concurrency_test)
+endif()
 
-target_link_libraries(crunch_concurrency_benchmark
-  crunch_benchmarking_lib
-  crunch_concurrency_lib)
+if(NOT CRUNCH_NO_BENCHMARKS)
+  vpm_depend(crunch.benchmarking)
 
-crunch_add_benchmark(crunch_concurrency_benchmark)
+  add_executable(crunch_concurrency_benchmark
+    benchmark/atomic_benchmarks.cpp
+    benchmark/event_benchmarks.cpp
+    benchmark/meta_scheduler_benchmarks.cpp)
+
+  target_link_libraries(crunch_concurrency_benchmark
+    crunch_benchmarking_lib
+    crunch_concurrency_lib)
+
+  crunch_add_benchmark(crunch_concurrency_benchmark)
+endif()

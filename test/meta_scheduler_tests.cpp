@@ -17,7 +17,7 @@ BOOST_AUTO_TEST_CASE(WaitTest)
         virtual bool IsOrderDependent() const { return false; }
     };
 
-    MetaScheduler::Configuration const configuration;
+    MetaScheduler::Configuration configuration;
     MetaScheduler ms(configuration);
     MetaScheduler::Context& context = ms.AcquireContext();
 

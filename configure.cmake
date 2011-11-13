@@ -2,7 +2,7 @@
 # Distributed under the Simplified BSD License (See accompanying file LICENSE.txt)
 
 vpm_depend(
-  crunch_base
-  crunch_containers)
+  crunch.base
+  crunch.containers)
 
 vpm_include_directories(${CMAKE_CURRENT_LIST_DIR}/include)

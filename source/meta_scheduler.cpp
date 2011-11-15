@@ -16,29 +16,30 @@
 
 namespace Crunch { namespace Concurrency {
 
-MetaScheduler::RunMode::RunMode(Type type, uint32 parameter)
+MetaScheduler::RunMode::RunMode(Type type, uint32 count, Duration duration)
     : mType(type)
-    , mParameter(parameter)
-{ }
+    , mCount(count)
+    , mDuration(duration)
+{}
 
 MetaScheduler::RunMode MetaScheduler::RunMode::Disabled()
 {
-    return RunMode(TYPE_DISABLED, 0);
+    return RunMode(TYPE_DISABLED, 0, Duration::Zero);
 }
 
 MetaScheduler::RunMode MetaScheduler::RunMode::Some(uint32 count)
 {
-    return RunMode(TYPE_SOME, count);
+    return RunMode(TYPE_SOME, count, Duration::Zero);
 }
 
-MetaScheduler::RunMode MetaScheduler::RunMode::TimedMicroseconds(uint32 count)
+MetaScheduler::RunMode MetaScheduler::RunMode::Timed(Duration duration)
 {
-    return RunMode(TYPE_TIMED, count);
+    return RunMode(TYPE_TIMED, 0, duration);
 }
 
 MetaScheduler::RunMode MetaScheduler::RunMode::All()
 {
-    return RunMode(TYPE_ALL, 0);
+    return RunMode(TYPE_ALL, 0, Duration::Zero);
 }
 
 MetaScheduler::Configuration::Group::Group(uint32 id, RunMode defaultRunMode)

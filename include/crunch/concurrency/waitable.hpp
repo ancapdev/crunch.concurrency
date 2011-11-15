@@ -4,13 +4,14 @@
 #ifndef CRUNCH_CONCURRENCY_WAITABLE_HPP
 #define CRUNCH_CONCURRENCY_WAITABLE_HPP
 
+#include "crunch/base/novtable.hpp"
 #include "crunch/concurrency/waiter.hpp"
 #include "crunch/concurrency/wait_mode.hpp"
 #include "crunch/containers/small_vector.hpp"
 
 namespace Crunch { namespace Concurrency {
 
-struct IWaitable
+struct CRUNCH_NOVTABLE IWaitable
 {
     template<typename F>
     void AddWaiter(F callback)

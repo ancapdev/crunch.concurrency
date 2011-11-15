@@ -4,6 +4,7 @@
 #ifndef CRUNCH_CONCURRENCY_META_SCHEDULER_HPP
 #define CRUNCH_CONCURRENCY_META_SCHEDULER_HPP
 
+#include "crunch/base/duration.hpp"
 #include "crunch/base/stdint.hpp"
 #include "crunch/concurrency/processor_affinity.hpp"
 #include "crunch/concurrency/scheduler.hpp"
@@ -29,7 +30,7 @@ public:
     public:
         static RunMode Disabled();
         static RunMode Some(uint32 count);
-        static RunMode TimedMicroseconds(uint32 count);
+        static RunMode Timed(Duration duration);
         static RunMode All();
 
     private:
@@ -41,10 +42,11 @@ public:
             TYPE_ALL
         };
 
-        RunMode(Type type, uint32 parameter);
+        RunMode(Type type, uint32 count, Duration duration);
 
         Type mType;
-        uint32 mParameter;
+        uint32 mCount;
+        Duration mDuration;
     };
 
     typedef std::shared_ptr<IScheduler> SchedulerPtr;

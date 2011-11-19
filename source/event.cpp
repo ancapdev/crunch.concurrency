@@ -2,7 +2,7 @@
 // Distributed under the Simplified BSD License (See accompanying file LICENSE.txt)
 
 #include "crunch/concurrency/event.hpp"
-#include "crunch/concurrency/yield.hpp"
+#include "crunch/concurrency/exponential_backoff.hpp"
 #include "crunch/concurrency/waiter_utility.hpp"
 
 namespace Crunch { namespace Concurrency {

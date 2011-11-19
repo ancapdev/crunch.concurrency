@@ -6,7 +6,7 @@
 
 #include "crunch/base/stdint.hpp"
 #include "crunch/concurrency/atomic.hpp"
-#include "crunch/concurrency/yield.hpp"
+#include "crunch/concurrency/exponential_backoff.hpp"
 
 namespace Crunch { namespace Concurrency {
 
@@ -18,7 +18,7 @@ struct ReclamationPolicyAccessViolationChecked;
 ///     T* GetNext(T const&)
 //     
 // TODO: Memory reclamation policy
-template<typename T, typename ReclamationPolicy = ReclamationPolicyAccessViolationChecked>
+template<typename T, typename BackoffPolicy = ExponentialBackoff, typename ReclamationPolicy = ReclamationPolicyAccessViolationChecked>
 class MPMCLifoList
 {
 public:
@@ -28,15 +28,14 @@ public:
     
     void Push(T* node)
     {
-        ExponentialBackoff backoff;
+        BackoffPolicy backoff;
         uint64 oldRoot = mRoot.Load(MEMORY_ORDER_RELAXED);
-        uint64 newRootPtrAndAddend = reinterpret_cast<uint64>(node) + ABA_ADDEND;
+        uint64 const newRootPtrAndAddend = reinterpret_cast<uint64>(node) + ABA_ADDEND;
 
         for (;;)
         {
             // Set next pointer in node
-            T* const oldRootPtr = reinterpret_cast<T*>(oldRoot & PTR_MASK);
-            SetNext(*node, oldRootPtr);
+            SetNext(*node, reinterpret_cast<T*>(oldRoot & PTR_MASK));
 
             // Try to update current root node
             uint64 const newRoot = newRootPtrAndAddend + (oldRoot & ABA_MASK);
@@ -49,7 +48,7 @@ public:
 
     T* Pop()
     {
-        ExponentialBackoff backoff;
+        BackoffPolicy backoff;
         uint64 oldRoot = mRoot.Load(MEMORY_ORDER_RELAXED);
 
         for (;;)

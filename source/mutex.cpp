@@ -2,8 +2,8 @@
 // Distributed under the Simplified BSD License (See accompanying file LICENSE.txt)
 
 #include "crunch/base/assert.hpp"
+#include "crunch/concurrency/exponential_backoff.hpp"
 #include "crunch/concurrency/mutex.hpp"
-#include "crunch/concurrency/yield.hpp"
 
 namespace Crunch { namespace Concurrency {
 

@@ -14,8 +14,10 @@ endif()
     
 vpm_add_library(crunch_concurrency_lib
   include/crunch/concurrency/atomic.hpp
+  include/crunch/concurrency/constant_backoff.hpp
   include/crunch/concurrency/event.hpp
   include/crunch/concurrency/exceptions.hpp
+  include/crunch/concurrency/exponential_backoff.hpp
   include/crunch/concurrency/fence.hpp
   include/crunch/concurrency/future.hpp
   include/crunch/concurrency/mpmc_lifo_list.hpp
@@ -23,11 +25,13 @@ vpm_add_library(crunch_concurrency_lib
   include/crunch/concurrency/memory_order.hpp
   include/crunch/concurrency/meta_scheduler.hpp
   include/crunch/concurrency/mutex.hpp
+  include/crunch/concurrency/null_backoff.hpp
   include/crunch/concurrency/processor_affinity.hpp
   include/crunch/concurrency/processor_topology.hpp
   include/crunch/concurrency/promise.hpp
   include/crunch/concurrency/semaphore.hpp
   include/crunch/concurrency/scheduler.hpp
+  include/crunch/concurrency/spin_barrier.hpp
   include/crunch/concurrency/thread.hpp
   include/crunch/concurrency/thread_local.hpp
   include/crunch/concurrency/wait_mode.hpp
@@ -89,8 +93,7 @@ if(NOT CRUNCH_NO_TESTS)
 
   target_link_libraries(crunch_concurrency_test
     crunch_concurrency_lib
-    crunch_test_lib
-    ${Boost_LIBRARIES})
+    crunch_test_lib)
 
   crunch_add_test(crunch_concurrency_test)
 endif()
@@ -101,7 +104,8 @@ if(NOT CRUNCH_NO_BENCHMARKS)
   add_executable(crunch_concurrency_benchmark
     benchmark/atomic_benchmarks.cpp
     benchmark/event_benchmarks.cpp
-    benchmark/meta_scheduler_benchmarks.cpp)
+    benchmark/meta_scheduler_benchmarks.cpp
+    benchmark/mpmc_lifo_list_benchmarks.cpp)
 
   target_link_libraries(crunch_concurrency_benchmark
     crunch_benchmarking_lib

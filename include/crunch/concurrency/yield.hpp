@@ -29,58 +29,6 @@ inline void Pause(int count)
 }
 #endif
 
-template<int PauseLimit>
-class ExponentialBackoffT
-{
-public:
-    static int const DefaultYieldLimit = 16;
-
-    ExponentialBackoffT() : mCount(1) {}
-    /*
-    ExponentialBackoff(int yieldLimit = DefaultYieldLimit)
-        : mCount(1)
-        , mLimit(yieldLimit)
-    {}
-    */
-
-    void Pause()
-    {
-        if (mCount <= mLimit)
-        {
-            Concurrency::Pause(mCount);
-            mCount *= 2;
-        }
-        else
-        {
-            ThreadYield();
-        }
-    }
-
-    bool TryPause()
-    {
-        if (mCount <= mLimit)
-        {
-            Concurrency::Pause(mCount);
-            mCount *= 2;
-            return true;
-        }
-        else
-        {
-            return false;
-        }
-    }
-    
-    void Reset()
-    {
-        mCount = 1;
-    }
-
-private:
-    int mCount;
-    static int const mLimit = PauseLimit;
-};
-
-typedef ExponentialBackoffT<16> ExponentialBackoff;
 }}
 
 #endif

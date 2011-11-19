@@ -1,6 +1,7 @@
 // Copyright (c) 2011, Christian Rorvik
 // Distributed under the Simplified BSD License (See accompanying file LICENSE.txt)
 
+#include "crunch/concurrency/constant_backoff.hpp"
 #include "crunch/concurrency/event.hpp"
 #include "crunch/concurrency/exponential_backoff.hpp"
 #include "crunch/concurrency/waiter_utility.hpp"
@@ -13,7 +14,7 @@ Event::Event(bool initialState)
 
 bool Event::AddWaiter(Waiter* waiter)
 {
-    // ExponentialBackoff backoff;
+    ConstantBackoff backoff;
     uint64 head = mWaiters.Load(MEMORY_ORDER_RELAXED);
     for (;;)
     {
@@ -25,7 +26,7 @@ bool Event::AddWaiter(Waiter* waiter)
         if (mWaiters.CompareAndSwap(newHead, head))
             return true;
 
-        // backoff.Pause();
+        backoff.Pause();
     }
 }
 

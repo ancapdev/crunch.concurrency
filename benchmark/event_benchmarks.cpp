@@ -48,8 +48,10 @@ BOOST_AUTO_TEST_CASE(RemoveMe)
             {
                 for (int j = 0; j < count; ++j)
                     event.AddWaiter(waiters[j]);
+                /*
                 for (int j = 0; j < count; ++j)
                     event.RemoveWaiter(waiters[j]);
+                //*/
             }
             stopwatch.Stop();
             profiler.AddSample(stopwatch.GetElapsedNanoseconds() / (reps * count));
@@ -70,4 +72,4 @@ BOOST_AUTO_TEST_CASE(RemoveMe)
 
 BOOST_AUTO_TEST_SUITE_END()
 
-}} 
+}}

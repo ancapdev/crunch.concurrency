@@ -18,7 +18,7 @@ vpm_add_library(crunch_concurrency_lib
   include/crunch/concurrency/exceptions.hpp
   include/crunch/concurrency/fence.hpp
   include/crunch/concurrency/future.hpp
-  include/crunch/concurrency/lock_free_slist.hpp
+  include/crunch/concurrency/mpmc_lifo_list.hpp
   include/crunch/concurrency/lock_guard.hpp
   include/crunch/concurrency/memory_order.hpp
   include/crunch/concurrency/meta_scheduler.hpp
@@ -81,6 +81,7 @@ if(NOT CRUNCH_NO_TESTS)
     test/event_tests.cpp
     test/future_tests.cpp
     test/meta_scheduler_tests.cpp
+    test/mpmc_lifo_list_tests.cpp
     test/mutex_tests.cpp
     test/processor_topology_tests.cpp
     test/semaphore_tests.cpp

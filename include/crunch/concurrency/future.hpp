@@ -61,9 +61,9 @@ public:
     //
     using IWaitable::AddWaiter;
 
-    virtual void AddWaiter(Waiter* waiter) CRUNCH_OVERRIDE
+    virtual bool AddWaiter(Waiter* waiter) CRUNCH_OVERRIDE
     {
-        mData->AddWaiter(waiter);
+        return mData->AddWaiter(waiter);
     }
 
     virtual bool RemoveWaiter(Waiter* waiter) CRUNCH_OVERRIDE

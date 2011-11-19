@@ -11,16 +11,16 @@ BOOST_AUTO_TEST_SUITE(SemaphoreTests)
 BOOST_AUTO_TEST_CASE(InitialReadyThenWaitTest)
 {
     Semaphore s(1);
-    volatile bool acquired = false;
-    s.AddWaiter([&] { acquired = true; });
-    BOOST_CHECK(acquired);
+    volatile bool called = false;
+    BOOST_CHECK(!s.AddWaiter([&] { called = true; }));
+    BOOST_CHECK(!called);
 }
 
 BOOST_AUTO_TEST_CASE(WaitThenPostTest)
 {
     Semaphore s(0);
     volatile bool acquired = false;
-    s.AddWaiter([&] { acquired = true; });
+    BOOST_CHECK(s.AddWaiter([&] { acquired = true; }));
     BOOST_CHECK(!acquired);
     s.Post();
     BOOST_CHECK(acquired);
@@ -29,10 +29,10 @@ BOOST_AUTO_TEST_CASE(WaitThenPostTest)
 BOOST_AUTO_TEST_CASE(PostThenWaitTest)
 {
     Semaphore s(0);
-    volatile bool acquired = false;
+    volatile bool called = false;
     s.Post();
-    s.AddWaiter([&] { acquired = true; });
-    BOOST_CHECK(acquired);
+    BOOST_CHECK(!s.AddWaiter([&] { called = true; }));
+    BOOST_CHECK(!called);
 }
 
 BOOST_AUTO_TEST_CASE(RemoveWaitFromEmptyTest)
@@ -47,7 +47,7 @@ BOOST_AUTO_TEST_CASE(RemoveWaiterTest)
 {
     Semaphore s(0);
     auto waiter = Waiter::Create([]{}, false);
-    s.AddWaiter(waiter);
+    BOOST_CHECK(s.AddWaiter(waiter));
     BOOST_CHECK(s.RemoveWaiter(waiter));
     waiter->Destroy();
 }

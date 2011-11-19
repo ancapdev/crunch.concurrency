@@ -1,6 +1,7 @@
 // Copyright (c) 2011, Christian Rorvik
 // Distributed under the Simplified BSD License (See accompanying file LICENSE.txt)
 
+#include "crunch/base/override.hpp"
 #include "crunch/concurrency/meta_scheduler.hpp"
 #include "crunch/concurrency/processor_affinity.hpp"
 #include "crunch/benchmarking/stopwatch.hpp"
@@ -16,9 +17,9 @@ namespace Crunch { namespace Concurrency {
 
 struct NullWaitable : IWaitable
 {
-    virtual void AddWaiter(Waiter* waiter) { waiter->Notify(); }
-    virtual bool RemoveWaiter(Waiter*) { return false; }
-    virtual bool IsOrderDependent() const { return false; }
+    virtual bool AddWaiter(Waiter*) CRUNCH_OVERRIDE { return false; }
+    virtual bool RemoveWaiter(Waiter*) CRUNCH_OVERRIDE { return false; }
+    virtual bool IsOrderDependent() const CRUNCH_OVERRIDE { return false; }
 };
 
 BOOST_AUTO_TEST_SUITE(MetaSchedulerBenchmarks)

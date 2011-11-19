@@ -43,11 +43,11 @@ void Semaphore::Post()
     }
 }
 
-void Semaphore::AddWaiter(Waiter* waiter)
+bool Semaphore::AddWaiter(Waiter* waiter)
 {
     if (mCount.Decrement() > 0)
     {
-        waiter->Notify();
+        return false;
     }
     else
     {
@@ -61,7 +61,7 @@ void Semaphore::AddWaiter(Waiter* waiter)
                 Detail::WaiterList::ABA_ADDEND;
 
             if (mWaiters.CompareAndSwap(newHead, head))
-                return;
+                return true;
 
             backoff.Pause();
         }

@@ -41,9 +41,9 @@ BOOST_AUTO_TEST_CASE(AddWaiterToSetTest)
     Event e(true);
     volatile uint32 wakeupCount = 0;
 
-    // Add waiter to set event. Should be called immediately.
-    e.AddWaiter([&] { wakeupCount++; });
-    BOOST_CHECK_EQUAL(wakeupCount, 1u);
+    // Add waiter to set event. Should return false and not execute callback.
+    BOOST_CHECK(!e.AddWaiter([&] { wakeupCount++; }));
+    BOOST_CHECK_EQUAL(wakeupCount, 0u);
 }
 
 BOOST_AUTO_TEST_CASE(AddWaiterToUnsetTest)
@@ -54,16 +54,17 @@ BOOST_AUTO_TEST_CASE(AddWaiterToUnsetTest)
     auto waiter = Waiter::Create([&] { wakeupCount++; }, false);
 
     // Add waiter to unset event.
-    e.AddWaiter(waiter);
+    BOOST_CHECK(e.AddWaiter(waiter));
     BOOST_CHECK_EQUAL(wakeupCount, 0u);
 
     // Remove waiter and set event.
-    e.RemoveWaiter(waiter);
+    BOOST_CHECK(e.RemoveWaiter(waiter));
     e.Set();
     BOOST_CHECK_EQUAL(wakeupCount, 0u);
 
     // Add waiter and set event.
-    e.AddWaiter(waiter);
+    e.Reset();
+    BOOST_CHECK(e.AddWaiter(waiter));
     e.Set();
     BOOST_CHECK_EQUAL(wakeupCount, 1u);
 

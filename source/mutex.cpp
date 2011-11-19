@@ -81,14 +81,11 @@ bool Mutex::IsLocked() const
     return mWaiters.Load(MEMORY_ORDER_RELAXED) != MUTEX_FREE_BIT;
 }
 
-void Mutex::AddWaiter(Waiter* waiter)
+bool Mutex::AddWaiter(Waiter* waiter)
 {
     uint64 head = MUTEX_FREE_BIT;
     if (mWaiters.CompareAndSwap(0, head))
-    {
-        waiter->Notify();
-        return;
-    }
+        return false;
 
     ExponentialBackoff backoff;
     for (;;)
@@ -98,10 +95,7 @@ void Mutex::AddWaiter(Waiter* waiter)
             // Mutex is unlocked. Attempt to lock.
             CRUNCH_ASSERT(head == MUTEX_FREE_BIT);
             if (mWaiters.CompareAndSwap(0, head))
-            {
-                waiter->Notify();
-                return;
-            }
+                return false;
         }
         else
         {
@@ -109,7 +103,7 @@ void Mutex::AddWaiter(Waiter* waiter)
             waiter->next = Detail::WaiterList::GetPointer(head);
             uint64 const newHead = Detail::WaiterList::SetPointer(head, waiter) + Detail::WaiterList::ABA_ADDEND;
             if (mWaiters.CompareAndSwap(newHead, head))
-                return;
+                return true;
         }
 
         backoff.Pause();

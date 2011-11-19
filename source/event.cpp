@@ -11,22 +11,19 @@ Event::Event(bool initialState)
     : mWaiters(initialState ? EVENT_SET_BIT : 0)
 {}
 
-void Event::AddWaiter(Waiter* waiter)
+bool Event::AddWaiter(Waiter* waiter)
 {
     // ExponentialBackoff backoff;
     uint64 head = mWaiters.Load(MEMORY_ORDER_RELAXED);
     for (;;)
     {
         if (head & EVENT_SET_BIT)
-        {
-            waiter->Notify();
-            return;
-        }
+            return false;
 
         waiter->next = Detail::WaiterList::GetPointer(head);
         uint64 const newHead = Detail::WaiterList::SetPointer(head, waiter) + Detail::WaiterList::ABA_ADDEND;
         if (mWaiters.CompareAndSwap(newHead, head))
-            return;
+            return true;
 
         // backoff.Pause();
     }

@@ -19,7 +19,7 @@ public:
 
     void Post();
 
-    virtual void AddWaiter(Waiter* waiter) CRUNCH_OVERRIDE;
+    virtual bool AddWaiter(Waiter* waiter) CRUNCH_OVERRIDE;
     virtual bool RemoveWaiter(Waiter* waiter) CRUNCH_OVERRIDE;
     virtual bool IsOrderDependent() const CRUNCH_OVERRIDE;
 

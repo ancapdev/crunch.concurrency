@@ -14,19 +14,21 @@ namespace Crunch { namespace Concurrency {
 struct CRUNCH_NOVTABLE IWaitable
 {
     template<typename F>
-    void AddWaiter(F callback)
+    bool AddWaiter(F callback)
     {
-        AddWaiter(Waiter::Create(callback, true));
+        return AddWaiter(Waiter::Create(callback, true));
     }
 
     template<typename F>
-    void AddWaiter(Waiter::Typed<F>* waiter)
+    bool AddWaiter(Waiter::Typed<F>* waiter)
     {
-        AddWaiter(static_cast<Waiter*>(waiter));
+        return AddWaiter(static_cast<Waiter*>(waiter));
     }
 
-    virtual void AddWaiter(Waiter* waiter) = 0;
+    /// \return true if added, false otherwise
+    virtual bool AddWaiter(Waiter* waiter) = 0;
 
+    /// \return true if removed, false otherwise.
     virtual bool RemoveWaiter(Waiter* waiter) = 0;
 
     virtual bool IsOrderDependent() const = 0;

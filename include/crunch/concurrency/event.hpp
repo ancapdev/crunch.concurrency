@@ -26,7 +26,7 @@ public:
     bool IsSet() const;
 
     // Lock free
-    virtual void AddWaiter(Waiter* waiter) CRUNCH_OVERRIDE;
+    virtual bool AddWaiter(Waiter* waiter) CRUNCH_OVERRIDE;
 
     // Locked with RemoveWaiter and Set
     virtual bool RemoveWaiter(Waiter* waiter) CRUNCH_OVERRIDE;

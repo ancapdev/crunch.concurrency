@@ -134,8 +134,8 @@ public:
     {
         // TODO: Let active scheduler handle the wait if it can
         // TODO: Keep in mind if active scheduler is a fiber scheduler we might come back on a different system thread.. (and this thread might be used for other things.. i.e. waiter must be stack local)
-        waitable.AddWaiter(mWaiter);
-        mWaitSemaphore.SpinWait(waitMode.spinCount);
+        if (waitable.AddWaiter(mWaiter))
+            mWaitSemaphore.SpinWait(waitMode.spinCount);
     }
 
     CRUNCH_ALWAYS_INLINE void WaitForAll(IWaitable** waitables, std::size_t count, WaitMode waitMode)
@@ -164,10 +164,12 @@ public:
 
         if (unorderedCount != 0)
         {
+            std::size_t addedCount = 0;
             for (std::size_t i = 0; i < unorderedCount; ++i)
-                waitables[i]->AddWaiter([&] { mWaitSemaphore.Post(); });
+                if (waitables[i]->AddWaiter([&] { mWaitSemaphore.Post(); }))
+                    addedCount++;
 
-            for (std::size_t i = 0; i < unorderedCount; ++i)
+            for (std::size_t i = 0; i < addedCount; ++i)
                 mWaitSemaphore.SpinWait(waitMode.spinCount);
         }
     }
@@ -179,28 +181,41 @@ public:
 
         WaiterType** waiters = CRUNCH_STACK_ALLOC_T(WaiterType*, count);
 
+        WaitForAnyResult signaled;
+
+        std::size_t addedCount = 0;
         for (std::size_t i = 0; i < count; ++i)
         {
             waiters[i] = Waiter::Create(poster, false);
-            waitables[i]->AddWaiter(waiters[i]);
+            if (!waitables[i]->AddWaiter(waiters[i]))
+            {
+                waiters[i]->Destroy();
+                signaled.push_back(waitables[i]);
+                break;
+            }
+            addedCount++;
         }
 
-        mWaitSemaphore.SpinWait(waitMode.spinCount);
+        // If no waitable synchronously ready, wait for one to become ready
+        if (addedCount == count)
+            mWaitSemaphore.SpinWait(waitMode.spinCount);
 
-        WaitForAnyResult signaled;
-        for (std::size_t i = 0; i < count; ++i)
+        // Try to remove waiters for all waitables
+        for (std::size_t i = 0; i < addedCount; ++i)
         {
             if (!waitables[i]->RemoveWaiter(waiters[i]))
                 signaled.push_back(waitables[i]);
         }
 
-        // Wait for any waiters that weren't removed. They should be in-flight Notify()
+        // Wait for any waiters that weren't removed. They should be in-flight callbacks.
+        // We've already waited for 1 either in SpinWait or by synchronous ready, so start count from 1
         CRUNCH_ASSERT(signaled.size() >= 1);
         for (std::size_t i = 1; i < signaled.size(); ++i)
             mWaitSemaphore.SpinWait(waitMode.spinCount);
 
-        // TODO: bulk free
-        for (std::size_t i = 0; i < count; ++i)
+        // Destroy all waiters
+        // TODO: Could bulk free. Callback shouldn't require destruction, so only list of waiters need to be reclaimed.
+        for (std::size_t i = 0; i < addedCount; ++i)
             waiters[i]->Destroy();
 
         return signaled;

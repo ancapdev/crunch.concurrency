@@ -45,7 +45,7 @@ namespace Detail
 
     inline void AtomicStore(int64_t volatile& dst, int64_t src)
     {
-#if defined (CRUNCH_ARCH_X64)
+#if defined (CRUNCH_ARCH_X86_64)
         dst = src;
 #else
         __asm__ __volatile__ (

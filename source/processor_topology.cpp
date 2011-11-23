@@ -17,29 +17,29 @@ namespace Crunch { namespace Concurrency {
 #if defined (CRUNCH_ARCH_X86)
 namespace
 {
-    ProcessorTopology::ProcessorList EnumerateFromCpuidInitialApicId(uint32 smtBits, uint32 coreBits)
+    ProcessorTopology::ProcessorList EnumerateFromCpuidInitialApicId(std::uint32_t smtBits, std::uint32_t coreBits)
     {
-        uint32 allMask = ~uint32(0);
-        uint32 const smtMask = ~(allMask << smtBits);
-        uint32 const coreMask = (~(allMask << (coreBits + smtBits))) ^ smtMask;
-        uint32 const packageMask = allMask << (coreBits + smtBits);
+        std::uint32_t allMask = ~std::uint32_t(0);
+        std::uint32_t const smtMask = ~(allMask << smtBits);
+        std::uint32_t const coreMask = (~(allMask << (coreBits + smtBits))) ^ smtMask;
+        std::uint32_t const packageMask = allMask << (coreBits + smtBits);
 
         const ProcessorAffinity processAffinity = GetCurrentProcessAffinity();
-        const uint32 highest = processAffinity.GetHighestSetProcessor();
+        const std::uint32_t highest = processAffinity.GetHighestSetProcessor();
 
         ProcessorTopology::ProcessorList processors;
 
-        for (uint32 i = 0; i <= highest; ++i)
+        for (std::uint32_t i = 0; i <= highest; ++i)
         {
             if (!processAffinity.IsSet(i))
                 continue;
 
             ProcessorAffinity const oldAffinity = SetCurrentThreadAffinity(ProcessorAffinity(i));
 
-            uint32 const initialApicId = ExtractBits(QueryCpuid(1).ebx, 24, 31);
-            uint32 const threadId = initialApicId & smtMask;
-            uint32 const coreId = (initialApicId & coreMask) >> smtBits;
-            uint32 const packageId = (initialApicId & packageMask) >> (coreBits + smtBits);
+            std::uint32_t const initialApicId = ExtractBits(QueryCpuid(1).ebx, 24, 31);
+            std::uint32_t const threadId = initialApicId & smtMask;
+            std::uint32_t const coreId = (initialApicId & coreMask) >> smtBits;
+            std::uint32_t const packageId = (initialApicId & packageMask) >> (coreBits + smtBits);
 
             ProcessorTopology::Processor const processor = { i, threadId, coreId, packageId };
             processors.push_back(processor);
@@ -53,35 +53,35 @@ namespace
     ProcessorTopology::ProcessorList EnumerateFromCpuidx2ApicId()
     {
         const ProcessorAffinity processAffinity = GetCurrentProcessAffinity();
-        const uint32 highest = processAffinity.GetHighestSetProcessor();
+        const std::uint32_t highest = processAffinity.GetHighestSetProcessor();
 
         ProcessorTopology::ProcessorList processors;
 
-        for (uint32 i = 0; ; ++i)
+        for (std::uint32_t i = 0; ; ++i)
         {
             CpuidResult const res = QueryCpuid(11, i);
             if (ExtractBits(res.ebx, 0, 15) == 0)
                 break;
         }
 
-        for (uint32 i = 0; i <= highest; ++i)
+        for (std::uint32_t i = 0; i <= highest; ++i)
         {
             if (!processAffinity.IsSet(i))
                 continue;
 
             ProcessorAffinity const oldAffinity = SetCurrentThreadAffinity(ProcessorAffinity(i));
 
-            uint32 const allMask = ~uint32(0);
-            uint32 const smtBits = ExtractBits(QueryCpuid(11).eax, 0, 4);
-            uint32 const smtMask = ~(allMask << smtBits);
-            uint32 const coreAndSmtBits = ExtractBits(QueryCpuid(11, 1).eax, 0, 4);
-            uint32 const coreMask = ~(allMask << coreAndSmtBits) ^ smtMask;
-            uint32 const packageMask = allMask << coreAndSmtBits;
+            std::uint32_t const allMask = ~std::uint32_t(0);
+            std::uint32_t const smtBits = ExtractBits(QueryCpuid(11).eax, 0, 4);
+            std::uint32_t const smtMask = ~(allMask << smtBits);
+            std::uint32_t const coreAndSmtBits = ExtractBits(QueryCpuid(11, 1).eax, 0, 4);
+            std::uint32_t const coreMask = ~(allMask << coreAndSmtBits) ^ smtMask;
+            std::uint32_t const packageMask = allMask << coreAndSmtBits;
 
-            uint32 const x2apic = QueryCpuid(11).edx;
-            uint32 const threadId = x2apic & smtMask;
-            uint32 const coreId = (x2apic & coreMask) >> smtBits;
-            uint32 const packageId = (x2apic & packageMask) >> (coreAndSmtBits);
+            std::uint32_t const x2apic = QueryCpuid(11).edx;
+            std::uint32_t const threadId = x2apic & smtMask;
+            std::uint32_t const coreId = (x2apic & coreMask) >> smtBits;
+            std::uint32_t const packageId = (x2apic & packageMask) >> (coreAndSmtBits);
 
             ProcessorTopology::Processor const processor = { i, threadId, coreId, packageId };
             processors.push_back(processor);
@@ -105,10 +105,10 @@ namespace
         else if (GetCpuidMaxFunction() >= 4)
         {
             // Enumerate using leaf 1 and 4
-            uint32 const maxNumLogicalPerPackage = ExtractBits(QueryCpuid(1).ebx, 16, 23);
-            uint32 const maxNumPhysicalPerPackage = ExtractBits(QueryCpuid(4).eax, 26, 31) + 1;
-            uint32 const smtBits = Log2Floor(Pow2Ceil(maxNumLogicalPerPackage) / maxNumPhysicalPerPackage);
-            uint32 const coreBits = Log2Floor(maxNumPhysicalPerPackage);
+            std::uint32_t const maxNumLogicalPerPackage = ExtractBits(QueryCpuid(1).ebx, 16, 23);
+            std::uint32_t const maxNumPhysicalPerPackage = ExtractBits(QueryCpuid(4).eax, 26, 31) + 1;
+            std::uint32_t const smtBits = Log2Floor(Pow2Ceil(maxNumLogicalPerPackage) / maxNumPhysicalPerPackage);
+            std::uint32_t const coreBits = Log2Floor(maxNumPhysicalPerPackage);
             return EnumerateFromCpuidInitialApicId(smtBits, coreBits);
         }
         else
@@ -119,16 +119,16 @@ namespace
 
     ProcessorTopology::ProcessorList EnumerateFromCpuidAmd()
     {
-        uint32 const maxLogicalPerPackage = ExtractBits(QueryCpuid(1).ebx, 16, 23);
+        std::uint32_t const maxLogicalPerPackage = ExtractBits(QueryCpuid(1).ebx, 16, 23);
         if (QueryCpuid(CpuidFunction::HighestExtendedFunction).eax)
         {
-            uint32 const coreBits = ExtractBits(QueryCpuid(0x80000008ul).ecx, 12, 15);
-            uint32 const smtBits = (maxLogicalPerPackage >> coreBits) == 0 ? 0 : Log2Ceil(maxLogicalPerPackage >> coreBits);
+            std::uint32_t const coreBits = ExtractBits(QueryCpuid(0x80000008ul).ecx, 12, 15);
+            std::uint32_t const smtBits = (maxLogicalPerPackage >> coreBits) == 0 ? 0 : Log2Ceil(maxLogicalPerPackage >> coreBits);
             return EnumerateFromCpuidInitialApicId(smtBits, coreBits);
         }
         else
         {
-            uint32 const coreBits = Log2Ceil(maxLogicalPerPackage);
+            std::uint32_t const coreBits = Log2Ceil(maxLogicalPerPackage);
             return EnumerateFromCpuidInitialApicId(0, coreBits);
         }
     }
@@ -158,8 +158,8 @@ ProcessorTopology::ProcessorTopology()
     // If we failed to enumerate in a system specific way, assume we have 1 core per system processor on a single package
     if (mProcessors.empty())
     {
-        uint32 numProcessors = GetSystemNumProcessors();
-        for (uint32 i = 0; i < numProcessors; ++i)
+        std::uint32_t numProcessors = GetSystemNumProcessors();
+        for (std::uint32_t i = 0; i < numProcessors; ++i)
         {
             Processor const p = { i, 0, i, 0 };
             mProcessors.push_back(p);

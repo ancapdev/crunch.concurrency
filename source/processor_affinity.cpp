@@ -11,7 +11,7 @@ ProcessorAffinity::ProcessorAffinity()
 {
 }
 
-ProcessorAffinity::ProcessorAffinity(uint32 processorId)
+ProcessorAffinity::ProcessorAffinity(std::uint32_t processorId)
 {
     Set(processorId);
 }
@@ -26,7 +26,7 @@ ProcessorAffinity::ProcessorAffinity(ProcessorTopology::ProcessorList const& pro
     Set(processors);
 }
 
-void ProcessorAffinity::Set(uint32 processorId)
+void ProcessorAffinity::Set(std::uint32_t processorId)
 {
     mProcessorMask.set(processorId);
 }
@@ -41,7 +41,7 @@ void ProcessorAffinity::Set(ProcessorTopology::ProcessorList const& processors)
     std::for_each(processors.begin(), processors.end(), [&] (ProcessorTopology::Processor const& p) { Set(p); });
 }
 
-void ProcessorAffinity::Clear(uint32 processorId)
+void ProcessorAffinity::Clear(std::uint32_t processorId)
 {
     mProcessorMask.reset(processorId);
 }
@@ -56,7 +56,7 @@ void ProcessorAffinity::Clear(ProcessorTopology::ProcessorList const& processors
     std::for_each(processors.begin(), processors.end(), [&] (ProcessorTopology::Processor const& p) { Clear(p); });
 }
 
-bool ProcessorAffinity::IsSet(uint32 processorId) const
+bool ProcessorAffinity::IsSet(std::uint32_t processorId) const
 {
     return mProcessorMask.test(processorId);
 }
@@ -66,9 +66,9 @@ bool ProcessorAffinity::IsEmpty() const
     return !mProcessorMask.any();
 }
 
-uint32 ProcessorAffinity::GetHighestSetProcessor() const
+std::uint32_t ProcessorAffinity::GetHighestSetProcessor() const
 {
-    for (uint32 i = MaxProcessorId; i != 0; --i)
+    for (std::uint32_t i = MaxProcessorId; i != 0; --i)
         if (IsSet(i))
             return i;
 

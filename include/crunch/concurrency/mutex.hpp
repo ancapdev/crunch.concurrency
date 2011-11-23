@@ -5,8 +5,9 @@
 #define CRUNCH_CONCURRENCY_MUTEX_HPP
 
 #include "crunch/base/override.hpp"
-#include "crunch/base/stdint.hpp"
 #include "crunch/concurrency/detail/waiter_list.hpp"
+
+#include <cstdint>
 
 namespace Crunch { namespace Concurrency {
 
@@ -16,7 +17,7 @@ class Mutex : public IWaitable
 public:
     using IWaitable::AddWaiter;
 
-    Mutex(uint32 spinCount = 0);
+    Mutex(std::uint32_t spinCount = 0);
 
     void Lock();
     
@@ -31,10 +32,10 @@ public:
 private:
     // Set when free rather than locked so we don't have to strip off
     // locked bit when building waiter list
-    static uint64 const MUTEX_FREE_BIT = Detail::WaiterList::USER_FLAG_BIT;
+    static std::uint64_t const MUTEX_FREE_BIT = Detail::WaiterList::USER_FLAG_BIT;
 
     Detail::WaiterList mWaiters;
-    uint32 mSpinCount;
+    std::uint32_t mSpinCount;
 };
 
 }}

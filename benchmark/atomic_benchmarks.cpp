@@ -15,7 +15,7 @@ using namespace Benchmarking;
 
 struct AtomicTester
 {
-    typedef ResultTable<std::tuple<int32, std::string, std::string, double, double, double, double, double>> ResultTableType;
+    typedef ResultTable<std::tuple<std::int32_t, std::string, std::string, double, double, double, double, double>> ResultTableType;
 
     AtomicTester()
         : results("Concurrency_AtomicOperations", 1, std::make_tuple("size", "op", "ordering", "min", "max", "mean", "median", "stddev"))
@@ -50,7 +50,7 @@ struct AtomicTester
         }
 
         results.Add(std::make_tuple(
-            static_cast<int32>(size),
+            static_cast<std::int32_t>(size),
             opName,
             orderingName,
             profiler.GetMin(),
@@ -87,8 +87,8 @@ BOOST_AUTO_TEST_SUITE(AtomicBenchmarks)
 BOOST_AUTO_TEST_CASE(AtomicOperationsBenchmark)
 {
     AtomicTester tester;
-    tester.RunAll<uint32>();
-    tester.RunAll<uint64>();
+    tester.RunAll<std::uint32_t>();
+    tester.RunAll<std::uint64_t>();
 }
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -10,8 +10,8 @@
 
 namespace Crunch { namespace Concurrency { namespace Detail {
 
-SystemSemaphore::SystemSemaphore(uint32 initialCount)
-    : mCount(static_cast<int32>(initialCount))
+SystemSemaphore::SystemSemaphore(std::uint32_t initialCount)
+    : mCount(static_cast<std::int32_t>(initialCount))
     , mSemaphore(::CreateSemaphore(NULL, static_cast<LONG>(initialCount), std::numeric_limits<LONG>::max(), NULL))
 {}
 
@@ -34,7 +34,7 @@ void SystemSemaphore::Wait()
 
 bool SystemSemaphore::TryWait()
 {
-    int32 count = mCount.Load(MEMORY_ORDER_RELAXED);
+    std::int32_t count = mCount.Load(MEMORY_ORDER_RELAXED);
     for (;;)
     {
         if (count <= 0)

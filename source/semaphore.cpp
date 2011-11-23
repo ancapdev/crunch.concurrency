@@ -6,7 +6,7 @@
 
 namespace Crunch { namespace Concurrency {
 
-Semaphore::Semaphore(uint32 initialCount)
+Semaphore::Semaphore(std::uint32_t initialCount)
     : mCount(initialCount)
     , mWaiters(0)
 {}
@@ -16,7 +16,7 @@ void Semaphore::Post()
     if (mCount.Increment() < 0)
     {
         ExponentialBackoff backoff;
-        uint64 head = mWaiters.Load(MEMORY_ORDER_RELAXED);
+        std::uint64_t head = mWaiters.Load(MEMORY_ORDER_RELAXED);
 
         for (;;)
         {
@@ -27,7 +27,7 @@ void Semaphore::Post()
 
             if ((head & Detail::WaiterList::LOCK_BIT) == 0)
             {
-                uint64 const newHead =
+                std::uint64_t const newHead =
                     Detail::WaiterList::SetPointer(head, headPtr->next) +
                     Detail::WaiterList::ABA_ADDEND;
 
@@ -52,11 +52,11 @@ bool Semaphore::AddWaiter(Waiter* waiter)
     else
     {
         ExponentialBackoff backoff;
-        uint64 head = mWaiters.Load(MEMORY_ORDER_RELAXED);
+        std::uint64_t head = mWaiters.Load(MEMORY_ORDER_RELAXED);
         for (;;)
         {
             waiter->next = Detail::WaiterList::GetPointer(head);
-            uint64 const newHead =
+            std::uint64_t const newHead =
                 Detail::WaiterList::SetPointer(head, waiter) +
                 Detail::WaiterList::ABA_ADDEND;
 

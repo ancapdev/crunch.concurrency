@@ -15,14 +15,14 @@ Event::Event(bool initialState)
 bool Event::AddWaiter(Waiter* waiter)
 {
     ConstantBackoff backoff;
-    uint64 head = mWaiters.Load(MEMORY_ORDER_RELAXED);
+    std::uint64_t head = mWaiters.Load(MEMORY_ORDER_RELAXED);
     for (;;)
     {
         if (head & EVENT_SET_BIT)
             return false;
 
         waiter->next = Detail::WaiterList::GetPointer(head);
-        uint64 const newHead = Detail::WaiterList::SetPointer(head, waiter) + Detail::WaiterList::ABA_ADDEND;
+        std::uint64_t const newHead = Detail::WaiterList::SetPointer(head, waiter) + Detail::WaiterList::ABA_ADDEND;
         if (mWaiters.CompareAndSwap(newHead, head))
             return true;
 
@@ -43,7 +43,7 @@ bool Event::IsOrderDependent() const
 void Event::Set()
 {
     ExponentialBackoff backoff;
-    uint64 head = mWaiters.Load(MEMORY_ORDER_RELAXED);
+    std::uint64_t head = mWaiters.Load(MEMORY_ORDER_RELAXED);
     for (;;)
     {
         // If already set, return
@@ -56,14 +56,14 @@ void Event::Set()
             if ((head & Detail::WaiterList::PTR_MASK) == 0)
             {
                 // No waiters to notify, only need to set state bit
-                uint64 const newHead = (head | EVENT_SET_BIT) + Detail::WaiterList::ABA_ADDEND;
+                std::uint64_t const newHead = (head | EVENT_SET_BIT) + Detail::WaiterList::ABA_ADDEND;
                 if (mWaiters.CompareAndSwap(newHead, head))
                     return;
             }
             else
             {
                 // Need to acquire lock on list and notify waiters
-                uint64 const lockedHead =
+                std::uint64_t const lockedHead =
                     ((head & ~Detail::WaiterList::PTR_MASK) |
                     Detail::WaiterList::LOCK_BIT | EVENT_SET_BIT) +
                     Detail::WaiterList::ABA_ADDEND;

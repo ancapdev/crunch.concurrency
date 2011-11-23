@@ -4,11 +4,11 @@
 #ifndef CRUNCH_CONCURRENCY_PROCESSOR_AFFINITY_HPP
 #define CRUNCH_CONCURRENCY_PROCESSOR_AFFINITY_HPP
 
-#include "crunch/base/stdint.hpp"
 #include "crunch/concurrency/thread.hpp"
 #include "crunch/concurrency/processor_topology.hpp"
 
 #include <bitset>
+#include <cstdint>
 
 namespace Crunch { namespace Concurrency {
 
@@ -16,26 +16,26 @@ class ProcessorAffinity
 {
 public:
     ProcessorAffinity();
-    ProcessorAffinity(uint32 processorId);
+    ProcessorAffinity(std::uint32_t processorId);
     ProcessorAffinity(ProcessorTopology::Processor const& processor);
     ProcessorAffinity(ProcessorTopology::ProcessorList const& processors);
     
-    void Set(uint32 processorId);
+    void Set(std::uint32_t processorId);
     void Set(ProcessorTopology::Processor const& processor);
     void Set(ProcessorTopology::ProcessorList const& processors);
 
-    void Clear(uint32 processorId);
+    void Clear(std::uint32_t processorId);
     void Clear(ProcessorTopology::Processor const& processor);
     void Clear(ProcessorTopology::ProcessorList const& processors);
 
-    bool IsSet(uint32 processorId) const;
+    bool IsSet(std::uint32_t processorId) const;
 
     bool IsEmpty() const;
 
-    uint32 GetHighestSetProcessor() const;
+    std::uint32_t GetHighestSetProcessor() const;
 
 private:
-    static const uint32 MaxProcessorId = 31;
+    static const std::uint32_t MaxProcessorId = 31;
     typedef std::bitset<MaxProcessorId+1> MaskType;
     MaskType mProcessorMask;
 };

@@ -6,10 +6,10 @@
 
 #include "crunch/base/override.hpp"
 #include "crunch/base/platform.hpp"
-#include "crunch/base/stdint.hpp"
 #include "crunch/concurrency/atomic.hpp"
 #include "crunch/concurrency/event.hpp"
 
+#include <cstdint>
 #include <cstddef>
 #include <exception>
 #include <memory>
@@ -25,7 +25,7 @@ public:
     using Event::AddWaiter;
     using Event::RemoveWaiter;
 
-    FutureDataBase(uint32 refCount = 0) : mRefCount(refCount, MEMORY_ORDER_RELEASE) {}
+    FutureDataBase(std::uint32_t refCount = 0) : mRefCount(refCount, MEMORY_ORDER_RELEASE) {}
 
     void SetException(std::exception_ptr const& exception)
     {
@@ -66,7 +66,7 @@ protected:
     __declspec(noreturn) void RethrowException() { std::rethrow_exception(*mException); }
 #endif
 
-    Atomic<uint32> mRefCount;
+    Atomic<std::uint32_t> mRefCount;
     std::unique_ptr<std::exception_ptr> mException;
 };
 
@@ -87,7 +87,7 @@ class FutureData : public FutureDataBase
 public:
     typedef T const& GetReturnType;
 
-    FutureData(uint32 refCount = 0)
+    FutureData(std::uint32_t refCount = 0)
         : FutureDataBase(refCount)
     {}
 
@@ -144,7 +144,7 @@ class FutureData<void> : public FutureDataBase
 public:
     typedef void GetReturnType;
 
-    FutureData(uint32 refCount = 0)
+    FutureData(std::uint32_t refCount = 0)
         : FutureDataBase(refCount)
     {}
 

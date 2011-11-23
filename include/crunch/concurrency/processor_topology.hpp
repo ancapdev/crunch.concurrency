@@ -4,23 +4,22 @@
 #ifndef CRUNCH_CONCURRENCY_PROCESSOR_TOPOLOGY_HPP
 #define CRUNCH_CONCURRENCY_PROCESSOR_TOPOLOGY_HPP
 
-#include "crunch/base/stdint.hpp"
-
+#include <cstdint>
 #include <vector>
 
 namespace Crunch { namespace Concurrency {
 
-uint32 GetSystemNumProcessors();
+std::uint32_t GetSystemNumProcessors();
 
 class ProcessorTopology
 {
 public:
     struct Processor
     {
-        uint32 systemId;  ///> Identifier used by the system for this processor. E.g., for processor affinity.
-        uint32 threadId;  ///> Thread ID within the the core
-        uint32 coreId;    ///> Core ID within the package
-        uint32 packageId; ///> Package ID within the system
+        std::uint32_t systemId;  ///> Identifier used by the system for this processor. E.g., for processor affinity.
+        std::uint32_t threadId;  ///> Thread ID within the the core
+        std::uint32_t coreId;    ///> Core ID within the package
+        std::uint32_t packageId; ///> Package ID within the system
     };
 
     typedef std::vector<Processor> ProcessorList;
@@ -29,8 +28,8 @@ public:
 
     ProcessorList const& GetProcessors() const { return mProcessors; }
 
-    ProcessorList GetProcessorsOnCore(uint32 coreId);
-    ProcessorList GetProcessorsOnPackage(uint32 packageId);
+    ProcessorList GetProcessorsOnCore(std::uint32_t coreId);
+    ProcessorList GetProcessorsOnPackage(std::uint32_t packageId);
 
 private:
     ProcessorList mProcessors;

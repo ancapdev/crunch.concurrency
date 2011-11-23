@@ -35,7 +35,7 @@ public:
     virtual bool IsOrderDependent() const CRUNCH_OVERRIDE;
 
 private:
-    static uint64 const EVENT_SET_BIT = Detail::WaiterList::USER_FLAG_BIT;
+    static std::uint64_t const EVENT_SET_BIT = Detail::WaiterList::USER_FLAG_BIT;
     Detail::WaiterList mWaiters;
 };
 

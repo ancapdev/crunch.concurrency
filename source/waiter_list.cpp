@@ -10,7 +10,7 @@ namespace Crunch { namespace Concurrency { namespace Detail {
 bool WaiterList::RemoveWaiter(Waiter* waiter)
 {
     ExponentialBackoff backoff;
-    uint64 head = Load(MEMORY_ORDER_RELAXED);
+    std::uint64_t head = Load(MEMORY_ORDER_RELAXED);
     for (;;)
     {
         // If empty, nothing to remove
@@ -28,7 +28,7 @@ bool WaiterList::RemoveWaiter(Waiter* waiter)
             if (headPtr == waiter)
             {
                 // If waiter is at head, do simple pop
-                uint64 const newHead = SetPointer(head, headPtr->next) + ABA_ADDEND;
+                std::uint64_t const newHead = SetPointer(head, headPtr->next) + ABA_ADDEND;
                 if (CompareAndSwap(newHead, head))
                     return true;
             }

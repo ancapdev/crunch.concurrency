@@ -2,48 +2,49 @@
 // Distributed under the Simplified BSD License (See accompanying file LICENSE.txt)
 
 #include "crunch/concurrency/atomic.hpp"
-#include "crunch/base/stdint.hpp"
 #include "crunch/test/framework.hpp"
 
 #include <boost/mpl/list.hpp>
 
+#include <cstdint>
+
 namespace Crunch { namespace Concurrency {
 
 typedef boost::mpl::list<
-    int16,
-    uint16,
-    int32,
-    uint32,
-    int64,
-    uint64> AtomicTypes;
+    std::int16_t,
+    std::uint16_t,
+    std::int32_t,
+    std::uint32_t,
+    std::int64_t,
+    std::uint64_t> AtomicTypes;
 
 typedef boost::mpl::list<
 #if defined (CRUNCH_ARCH_X86_64)
-    int64,
-    uint64,
+    std::int64_t,
+    std::uint64_t,
 #endif
-    int32,
-    uint32> AtomicSwapTypes;
+    std::int32_t,
+    std::uint32_t> AtomicSwapTypes;
 
 typedef AtomicSwapTypes AtomicAddTypes;
 
 typedef boost::mpl::list<
-    int16,
-    uint16,
-    int32,
-    uint32,
-    int64,
-    uint64> AtomicIncrementTypes;
+    std::int16_t,
+    std::uint16_t,
+    std::int32_t,
+    std::uint32_t,
+    std::int64_t,
+    std::uint64_t> AtomicIncrementTypes;
 
 typedef boost::mpl::list<
-    int8,
-    uint8,
-    int16,
-    uint16,
-    int32,
-    uint32,
-    int64,
-    uint64> AtomicAndTypes;
+    std::int8_t,
+    std::uint8_t,
+    std::int16_t,
+    std::uint16_t,
+    std::int32_t,
+    std::uint32_t,
+    std::int64_t,
+    std::uint64_t> AtomicAndTypes;
 
 typedef AtomicAndTypes AtomicOrTypes;
 typedef AtomicAndTypes AtomicXorTypes;

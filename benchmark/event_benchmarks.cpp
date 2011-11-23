@@ -22,7 +22,7 @@ BOOST_AUTO_TEST_CASE(RemoveMe)
     StatisticalProfiler profiler(0.01, 100, 1000, 10);
 
 
-    ResultTable<std::tuple<int32, double, double, double, double, double>> results(
+    ResultTable<std::tuple<std::int32_t, double, double, double, double, double>> results(
         "Event",
         1,
         std::make_tuple("count", "min", "max", "mean", "median", "stddev"));
@@ -37,7 +37,7 @@ BOOST_AUTO_TEST_CASE(RemoveMe)
         waiters[i] = Waiter::Create(nullFunc, false);
 
     int const reps = 100;
-    for (int32 count = 1; count < maxCount; ++count)
+    for (std::int32_t count = 1; count < maxCount; ++count)
     {
         profiler.Reset();
 

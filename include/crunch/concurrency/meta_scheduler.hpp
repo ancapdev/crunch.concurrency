@@ -5,13 +5,13 @@
 #define CRUNCH_CONCURRENCY_META_SCHEDULER_HPP
 
 #include "crunch/base/duration.hpp"
-#include "crunch/base/stdint.hpp"
 #include "crunch/concurrency/processor_affinity.hpp"
 #include "crunch/concurrency/scheduler.hpp"
 #include "crunch/concurrency/thread_local.hpp"
 #include "crunch/concurrency/waitable.hpp"
 #include "crunch/concurrency/detail/system_mutex.hpp"
 
+#include <cstdint>
 #include <memory>
 #include <vector>
 
@@ -29,7 +29,7 @@ public:
     {
     public:
         static RunMode Disabled();
-        static RunMode Some(uint32 count);
+        static RunMode Some(std::uint32_t count);
         static RunMode Timed(Duration duration);
         static RunMode All();
 
@@ -42,10 +42,10 @@ public:
             TYPE_ALL
         };
 
-        RunMode(Type type, uint32 count, Duration duration);
+        RunMode(Type type, std::uint32_t count, Duration duration);
 
         Type mType;
-        uint32 mCount;
+        std::uint32_t mCount;
         Duration mDuration;
     };
 
@@ -55,15 +55,15 @@ public:
     class Configuration
     {
     public:
-        void AddGroup(uint32 id, RunMode defaultRunMode);
-        void AddScheduler(uint32 groupId, SchedulerPtr const& scheduler);
+        void AddGroup(std::uint32_t id, RunMode defaultRunMode);
+        void AddScheduler(std::uint32_t groupId, SchedulerPtr const& scheduler);
 
     private:
         struct Group
         {
-            Group(uint32 id, RunMode defaultRunMode);
+            Group(std::uint32_t id, RunMode defaultRunMode);
 
-            uint32 id;
+            std::uint32_t id;
             RunMode defaultRunMode;
             std::vector<SchedulerPtr> schedulers;
         };
@@ -79,14 +79,14 @@ public:
     public:
         MetaThreadConfig() : mSchedulerAffinity(0xfffffffful) {}
 
-        void SetSchedulerAffinity(uint32 affinity) { mSchedulerAffinity = affinity; }
-        uint32 GetSchedulerAffinity() const { return mSchedulerAffinity; }
+        void SetSchedulerAffinity(std::uint32_t affinity) { mSchedulerAffinity = affinity; }
+        std::uint32_t GetSchedulerAffinity() const { return mSchedulerAffinity; }
 
         void SetProcessorAffinity(ProcessorAffinity const& affinity) { mProcessorAffinity = affinity; }
         ProcessorAffinity const& GetProcessorAffinity() const { return mProcessorAffinity; }
 
     private:
-        uint32 mSchedulerAffinity; ///> Determines which schedulers run on this meta thread
+        std::uint32_t mSchedulerAffinity; ///> Determines which schedulers run on this meta thread
         ProcessorAffinity mProcessorAffinity;
     };
 

@@ -7,18 +7,18 @@
 
 namespace Crunch { namespace Concurrency {
 
-Mutex::Mutex(uint32 spinCount)
+Mutex::Mutex(std::uint32_t spinCount)
     : mWaiters(MUTEX_FREE_BIT)
     , mSpinCount(spinCount)
 {}
 
 void Mutex::Lock()
 {
-    uint64 head = MUTEX_FREE_BIT;
+    std::uint64_t head = MUTEX_FREE_BIT;
     if (mWaiters.CompareAndSwap(0, head))
         return;
     
-    uint32 spinLeft = mSpinCount;
+    std::uint32_t spinLeft = mSpinCount;
     while (spinLeft--)
     {
         head = mWaiters.Load(MEMORY_ORDER_RELAXED);
@@ -35,7 +35,7 @@ void Mutex::Lock()
 
 void Mutex::Unlock()
 {
-    uint64 head = 0;
+    std::uint64_t head = 0;
     if (mWaiters.CompareAndSwap(MUTEX_FREE_BIT, head))
         return;
 
@@ -61,7 +61,7 @@ void Mutex::Unlock()
         else 
         {
             // Try to pop first waiter off list and signal
-            uint64 const newHead =
+            std::uint64_t const newHead =
                 Detail::WaiterList::SetPointer(head, headPtr->next) +
                 Detail::WaiterList::ABA_ADDEND;
 
@@ -83,7 +83,7 @@ bool Mutex::IsLocked() const
 
 bool Mutex::AddWaiter(Waiter* waiter)
 {
-    uint64 head = MUTEX_FREE_BIT;
+    std::uint64_t head = MUTEX_FREE_BIT;
     if (mWaiters.CompareAndSwap(0, head))
         return false;
 
@@ -101,7 +101,7 @@ bool Mutex::AddWaiter(Waiter* waiter)
         {
             // Mutex is locked, attempt to insert waiter
             waiter->next = Detail::WaiterList::GetPointer(head);
-            uint64 const newHead = Detail::WaiterList::SetPointer(head, waiter) + Detail::WaiterList::ABA_ADDEND;
+            std::uint64_t const newHead = Detail::WaiterList::SetPointer(head, waiter) + Detail::WaiterList::ABA_ADDEND;
             if (mWaiters.CompareAndSwap(newHead, head))
                 return true;
         }

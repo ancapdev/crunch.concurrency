@@ -7,7 +7,7 @@
 
 namespace Crunch { namespace Concurrency {
 
-uint32 GetSystemNumProcessors()
+std::uint32_t GetSystemNumProcessors()
 {
     SYSTEM_INFO info;
     GetSystemInfo(&info);

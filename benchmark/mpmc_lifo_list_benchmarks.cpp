@@ -43,11 +43,11 @@ BOOST_AUTO_TEST_CASE(PushPopBenchmark)
 {
     using namespace Benchmarking;
 
-    uint32 const systemProcCount = GetSystemNumProcessors();
+    std::uint32_t const systemProcCount = GetSystemNumProcessors();
 
     int const reps = 10000;
 
-    ResultTable<std::tuple<int32, char const*, double, double, double, double, double>> results(
+    ResultTable<std::tuple<std::int32_t, char const*, double, double, double, double, double>> results(
         "Crunch.Concurrency.MPMCLifoList.PushPop",
         1,
         std::make_tuple("threads", "operation", "min", "max", "mean", "median", "stddev"));
@@ -65,7 +65,7 @@ BOOST_AUTO_TEST_CASE(PushPopBenchmark)
             list.Push(&node);
             list.Push(&node);
         }
-        for (uint32 procCount = 1; procCount <= systemProcCount; ++procCount)
+        for (std::uint32_t procCount = 1; procCount <= systemProcCount; ++procCount)
         {
             volatile bool done = false;
             SpinBarrier startBarrier(procCount);
@@ -89,7 +89,7 @@ BOOST_AUTO_TEST_CASE(PushPopBenchmark)
                 return stopwatch.GetElapsedNanoseconds() / reps;
             };
 
-            auto workerFunc = [&] (uint32 index)
+            auto workerFunc = [&] (std::uint32_t index)
             {
                 SetCurrentThreadAffinity(ProcessorAffinity(index));
                 Benchmarking::Stopwatch stopwatch;
@@ -105,7 +105,7 @@ BOOST_AUTO_TEST_CASE(PushPopBenchmark)
 
             StatisticalProfiler profiler(0.01, 100, 1000, 10);
             std::vector<Thread> threads;
-            for (uint32 i = 1; i < procCount; ++i)
+            for (std::uint32_t i = 1; i < procCount; ++i)
                 threads.push_back(Thread([&, i] { workerFunc(i); }));
 
             Stopwatch stopwatch;
@@ -115,13 +115,13 @@ BOOST_AUTO_TEST_CASE(PushPopBenchmark)
                 threadResults[0] = benchmarkFunc(stopwatch);
                 finishBarrier.Wait();
 
-                for (uint32 i = 0; i < procCount; ++i)
+                for (std::uint32_t i = 0; i < procCount; ++i)
                     profiler.AddSample(threadResults[i]);
             }
 
             done = true;
             startBarrier.Wait();
-            for (uint32 i = 1; i < procCount; ++i)
+            for (std::uint32_t i = 1; i < procCount; ++i)
                 threads[i - 1].Join();
 
             results.Add(std::make_tuple(

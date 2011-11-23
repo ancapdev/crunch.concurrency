@@ -14,9 +14,9 @@ namespace
     {
         DWORD_PTR mask = 0;
 
-        uint32 highest = affinity.GetHighestSetProcessor();
+        std::uint32_t highest = affinity.GetHighestSetProcessor();
         
-        for (uint32 p = 0; p <= highest; ++p)
+        for (std::uint32_t p = 0; p <= highest; ++p)
             if (affinity.IsSet(p))
                 mask |= DWORD_PTR(1) << p;
 
@@ -27,7 +27,7 @@ namespace
     {
         ProcessorAffinity affinity;
 
-        for (uint32 p = 0; p < (sizeof(DWORD_PTR) * 8); ++p)
+        for (std::uint32_t p = 0; p < (sizeof(DWORD_PTR) * 8); ++p)
         {
             if (mask & (DWORD_PTR(1) << p))
                 affinity.Set(p);

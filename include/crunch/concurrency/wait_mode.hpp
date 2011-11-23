@@ -4,13 +4,13 @@
 #ifndef CRUNCH_CONCURRENCY_WAIT_MODE_HPP
 #define CRUNCH_CONCURRENCY_WAIT_MODE_HPP
 
-#include "crunch/base/stdint.hpp"
+#include <cstdint>
 
 namespace Crunch { namespace Concurrency {
 
 struct WaitMode
 {
-    WaitMode(uint32 spinCount, bool runCooperative)
+    WaitMode(std::uint32_t spinCount, bool runCooperative)
         : spinCount(spinCount)
         , runCooperative(runCooperative)
     {}
@@ -20,17 +20,17 @@ struct WaitMode
         return WaitMode(0xfffffffful, false);
     }
 
-    static WaitMode Block(uint32 spinCount = 0)
+    static WaitMode Block(std::uint32_t spinCount = 0)
     {
         return WaitMode(spinCount, false);
     }
 
-    static WaitMode Run(uint32 spinCount = 0)
+    static WaitMode Run(std::uint32_t spinCount = 0)
     {
         return WaitMode(spinCount, true);
     }
 
-    uint32 spinCount;
+    std::uint32_t spinCount;
     bool runCooperative;
 };
 

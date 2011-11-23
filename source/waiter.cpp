@@ -4,9 +4,9 @@
 #include "crunch/concurrency/waiter.hpp"
 #include "crunch/concurrency/atomic.hpp"
 #include "crunch/concurrency/detail/system_mutex.hpp"
-#include "crunch/base/stdint.hpp"
 
 #include <algorithm>
+#include <cstdint>
 #include <cstdlib>
 #include <vector>
 
@@ -28,7 +28,7 @@ namespace
 
         void* Allocate()
         {
-            uint64 head = mFreeList.Load(MEMORY_ORDER_RELAXED);
+            std::uint64_t head = mFreeList.Load(MEMORY_ORDER_RELAXED);
             for (;;)
             {
                 Waiter* headPtr = GetPointer(head);
@@ -41,7 +41,7 @@ namespace
                 }
                 else
                 {
-                    uint64 const newHead = SetPointer(head, headPtr->next) + ABA_ADDEND;
+                    std::uint64_t const newHead = SetPointer(head, headPtr->next) + ABA_ADDEND;
                     if (mFreeList.CompareAndSwap(newHead, head))
                         return headPtr;
                 }
@@ -51,11 +51,11 @@ namespace
         void Free(void* allocation)
         {
             Waiter* node = reinterpret_cast<Waiter*>(allocation);
-            uint64 head = mFreeList.Load(MEMORY_ORDER_RELAXED);
+            std::uint64_t head = mFreeList.Load(MEMORY_ORDER_RELAXED);
             for (;;)
             {
                 node->next = GetPointer(head);
-                uint64 const newHead = SetPointer(head, node) + ABA_ADDEND;
+                std::uint64_t const newHead = SetPointer(head, node) + ABA_ADDEND;
                 if (mFreeList.CompareAndSwap(newHead, head))
                     return;
             }
@@ -63,26 +63,26 @@ namespace
 
     private:
 #if (CRUNCH_PTR_SIZE == 4)
-        static uint64 const ABA_ADDEND = 4ull << 32;
-        static uint64 const PTR_MASK = 0xffffffffull;
+        static std::uint64_t const ABA_ADDEND = 4ull << 32;
+        static std::uint64_t const PTR_MASK = 0xffffffffull;
 #else
         // Assume 48 bit address space
-        static uint64 const ABA_ADDEND = 1ull << 48;
-        static uint64 const PTR_MASK = ABA_ADDEND - 1;
+        static std::uint64_t const ABA_ADDEND = 1ull << 48;
+        static std::uint64_t const PTR_MASK = ABA_ADDEND - 1;
 #endif
 
-        Waiter* GetPointer(uint64 ptrAndState)
+        Waiter* GetPointer(std::uint64_t ptrAndState)
         {
             return reinterpret_cast<Waiter*>(ptrAndState & PTR_MASK);
         }
 
-        uint64 SetPointer(uint64 ptrAndState, Waiter* ptr)
+        std::uint64_t SetPointer(std::uint64_t ptrAndState, Waiter* ptr)
         {
-            CRUNCH_ASSERT((reinterpret_cast<uint64>(ptr) & ~PTR_MASK) == 0);
-            return (ptrAndState & ~PTR_MASK) | reinterpret_cast<uint64>(ptr);
+            CRUNCH_ASSERT((reinterpret_cast<std::uint64_t>(ptr) & ~PTR_MASK) == 0);
+            return (ptrAndState & ~PTR_MASK) | reinterpret_cast<std::uint64_t>(ptr);
         }
 
-        Atomic<uint64> mFreeList;
+        Atomic<std::uint64_t> mFreeList;
         Detail::SystemMutex mAllocationsLock;
         std::vector<void*> mAllocations;
     };

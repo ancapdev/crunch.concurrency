@@ -4,9 +4,10 @@
 #ifndef CRUNCH_CONCURRENCY_MPMC_LIFO_LIST_HPP
 #define CRUNCH_CONCURRENCY_MPMC_LIFO_LIST_HPP
 
-#include "crunch/base/stdint.hpp"
 #include "crunch/concurrency/atomic.hpp"
 #include "crunch/concurrency/exponential_backoff.hpp"
+
+#include <cstdint>
 
 namespace Crunch { namespace Concurrency {
 
@@ -29,8 +30,8 @@ public:
     void Push(T* node)
     {
         BackoffPolicy backoff;
-        uint64 oldRoot = mRoot.Load(MEMORY_ORDER_RELAXED);
-        uint64 const newRootPtrAndAddend = reinterpret_cast<uint64>(node) + ABA_ADDEND;
+        std::uint64_t oldRoot = mRoot.Load(MEMORY_ORDER_RELAXED);
+        std::uint64_t const newRootPtrAndAddend = reinterpret_cast<std::uint64_t>(node) + ABA_ADDEND;
 
         for (;;)
         {
@@ -38,7 +39,7 @@ public:
             SetNext(*node, reinterpret_cast<T*>(oldRoot & PTR_MASK));
 
             // Try to update current root node
-            uint64 const newRoot = newRootPtrAndAddend + (oldRoot & ABA_MASK);
+            std::uint64_t const newRoot = newRootPtrAndAddend + (oldRoot & ABA_MASK);
             if (mRoot.CompareAndSwap(newRoot, oldRoot, MEMORY_ORDER_RELEASE))
                 break;
 
@@ -49,7 +50,7 @@ public:
     T* Pop()
     {
         BackoffPolicy backoff;
-        uint64 oldRoot = mRoot.Load(MEMORY_ORDER_RELAXED);
+        std::uint64_t oldRoot = mRoot.Load(MEMORY_ORDER_RELAXED);
 
         for (;;)
         {
@@ -57,8 +58,8 @@ public:
             if (oldRootPtr == nullptr)
                 return nullptr;
 
-            uint64 const newRoot =
-                reinterpret_cast<uint64>(GetNext(*oldRootPtr)) +
+            std::uint64_t const newRoot =
+                reinterpret_cast<std::uint64_t>(GetNext(*oldRootPtr)) +
                 (oldRoot & ABA_MASK) + ABA_ADDEND;
             
             if (mRoot.CompareAndSwap(newRoot, oldRoot, MEMORY_ORDER_RELEASE))
@@ -70,16 +71,16 @@ public:
 
 private:
 #if (CRUNCH_PTR_SIZE == 4)
-    static uint64 const PTR_MASK   = 0x00000000ffffffffull;
-    static uint64 const ABA_MASK   = 0xffffffff00000000ull;
-    static uint64 const ABA_ADDEND = 0x0000000100000000ull;
+    static std::uint64_t const PTR_MASK   = 0x00000000ffffffffull;
+    static std::uint64_t const ABA_MASK   = 0xffffffff00000000ull;
+    static std::uint64_t const ABA_ADDEND = 0x0000000100000000ull;
 #else
     // Assume 48 bit address space
-    static uint64 const PTR_MASK   = 0x0000ffffffffffffull;
-    static uint64 const ABA_MASK   = 0xffff000000000000ull;
-    static uint64 const ABA_ADDEND = 0x0001000000000000ull;
+    static std::uint64_t const PTR_MASK   = 0x0000ffffffffffffull;
+    static std::uint64_t const ABA_MASK   = 0xffff000000000000ull;
+    static std::uint64_t const ABA_ADDEND = 0x0001000000000000ull;
 #endif
-    Atomic<uint64> mRoot;
+    Atomic<std::uint64_t> mRoot;
 };
 
 }}

@@ -3,8 +3,9 @@
 
 #include "crunch/concurrency/event.hpp"
 #include "crunch/base/override.hpp"
-#include "crunch/base/stdint.hpp"
 #include "crunch/test/framework.hpp"
+
+#include <cstdint>
 
 namespace Crunch { namespace Concurrency {
 
@@ -39,7 +40,7 @@ BOOST_AUTO_TEST_CASE(StateChangeTest)
 BOOST_AUTO_TEST_CASE(AddWaiterToSetTest)
 {
     Event e(true);
-    volatile uint32 wakeupCount = 0;
+    volatile std::uint32_t wakeupCount = 0;
 
     // Add waiter to set event. Should return false and not execute callback.
     BOOST_CHECK(!e.AddWaiter([&] { wakeupCount++; }));
@@ -49,7 +50,7 @@ BOOST_AUTO_TEST_CASE(AddWaiterToSetTest)
 BOOST_AUTO_TEST_CASE(AddWaiterToUnsetTest)
 {
     Event e(false);
-    volatile uint32 wakeupCount = 0;
+    volatile std::uint32_t wakeupCount = 0;
 
     auto waiter = Waiter::Create([&] { wakeupCount++; }, false);
 

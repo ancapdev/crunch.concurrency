@@ -5,15 +5,16 @@
 #define CRUNCH_CONCURRENCY_SPIN_BARRIER_HPP
 
 #include "crunch/base/noncopyable.hpp"
-#include "crunch/base/stdint.hpp"
 #include "crunch/concurrency/atomic.hpp"
+
+#include <cstdint>
 
 namespace Crunch { namespace Concurrency {
 
 class SpinBarrier : NonCopyable
 {
 public:
-    SpinBarrier(uint32 count)
+    SpinBarrier(std::uint32_t count)
         : mTotalCount(count)
         , mWaitCount(count, MEMORY_ORDER_RELAXED)
         , mReadyCount(0, MEMORY_ORDER_RELAXED)
@@ -39,9 +40,9 @@ public:
     }
 
 private:
-    uint32 const mTotalCount;
-    Atomic<uint32> mWaitCount;
-    Atomic<uint32> mReadyCount;
+    std::uint32_t const mTotalCount;
+    Atomic<std::uint32_t> mWaitCount;
+    Atomic<std::uint32_t> mReadyCount;
 };
 
 }}

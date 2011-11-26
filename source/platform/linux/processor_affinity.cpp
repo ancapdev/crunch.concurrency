@@ -15,10 +15,10 @@ namespace
         cpu_set_t set;
         CPU_ZERO(&set);
 
-        uint32 highest = affinity.GetHighestSetProcessor();
+        std::uint32_t highest = affinity.GetHighestSetProcessor();
         CPU_SET(highest, &set);
 
-        for (uint32 p = 0; p < highest; ++p)
+        for (std::uint32_t p = 0; p < highest; ++p)
         {
             if (affinity.IsSet(p))
                 CPU_SET(p, &set);
@@ -34,7 +34,7 @@ namespace
         for (int p = 0; p < sizeof(cpu_set_t); ++p)
         {
             if (CPU_ISSET(p, set))
-                affinity.Set(static_cast<uint32>(p));
+                affinity.Set(static_cast<std::uint32_t>(p));
         }
 
         return affinity;

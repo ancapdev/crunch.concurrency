@@ -6,7 +6,7 @@
 
 namespace Crunch { namespace Concurrency { namespace Detail {
 
-SystemSemaphore::SystemSemaphore(uint32 initialCount)
+SystemSemaphore::SystemSemaphore(std::uint32_t initialCount)
 {
     CRUNCH_ASSERT_ALWAYS(sem_init(&mSemaphore, 0, initialCount) == 0);
 }

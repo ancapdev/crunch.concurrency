@@ -78,6 +78,7 @@ if(UNIX)
 endif()
 
 if(NOT CRUNCH_NO_TESTS)
+  vpm_set_default_version(crunch.test trunk)
   vpm_depend(crunch.test)
 
   add_executable(crunch_concurrency_test
@@ -99,6 +100,7 @@ if(NOT CRUNCH_NO_TESTS)
 endif()
 
 if(NOT CRUNCH_NO_BENCHMARKS)
+  vpm_set_default_version(crunch.benchmarking trunk)
   vpm_depend(crunch.benchmarking)
 
   add_executable(crunch_concurrency_benchmark

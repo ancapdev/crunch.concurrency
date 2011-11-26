@@ -7,11 +7,11 @@
 
 namespace Crunch { namespace Concurrency {
 
-uint32 GetSystemNumProcessors()
+std::uint32_t GetSystemNumProcessors()
 {
     long numProcessors = sysconf(_SC_NPROCESSORS_ONLN);
     if (numProcessors > 0)
-        return static_cast<uint32>(numProcessors);
+        return static_cast<std::uint32_t>(numProcessors);
     else
         return 1;
 }

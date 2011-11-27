@@ -5,6 +5,7 @@
 #define CRUNCH_CONCURRENCY_SCHEDULER_HPP
 
 #include "crunch/base/novtable.hpp"
+#include "crunch/base/enum_class.hpp"
 #include "crunch/concurrency/waitable.hpp"
 
 namespace Crunch { namespace Concurrency {
@@ -18,10 +19,11 @@ struct CRUNCH_NOVTABLE IThrottler
 
 struct CRUNCH_NOVTABLE ISchedulerContext
 {
-    enum State
+    CRUNCH_ENUM_CLASS State
     {
-        STATE_IDLE,
-        STATE_BUSY
+        Idle,    ///< No more work to do until has work condition is signaled
+        Working, ///< Busy working
+        Polling  ///< Busy polling for work
     };
 
     // Run until throttler->ShouldYield() or idle. Needs to be polled for each work item. Enables implementation to
@@ -29,7 +31,7 @@ struct CRUNCH_NOVTABLE ISchedulerContext
     // - Run timed
     // - Run until IWaitable event
     // or a combination of such conditions
-    virtual State Run(IThrottler& throttler) = 0;
+    virtual State Run(IThrottler const& throttler) = 0;
 
     virtual IWaitable& GetHasWorkCondition() = 0;
 

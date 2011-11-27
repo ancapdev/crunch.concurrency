@@ -40,7 +40,7 @@ public:
 
             // Try to update current root node
             std::uint64_t const newRoot = newRootPtrAndAddend + (oldRoot & ABA_MASK);
-            if (mRoot.CompareAndSwap(newRoot, oldRoot, MEMORY_ORDER_RELEASE))
+            if (mRoot.CompareAndSwap(oldRoot, newRoot, MEMORY_ORDER_RELEASE))
                 break;
 
             backoff.Pause();
@@ -62,7 +62,7 @@ public:
                 reinterpret_cast<std::uint64_t>(GetNext(*oldRootPtr)) +
                 (oldRoot & ABA_MASK) + ABA_ADDEND;
             
-            if (mRoot.CompareAndSwap(newRoot, oldRoot, MEMORY_ORDER_RELEASE))
+            if (mRoot.CompareAndSwap(oldRoot, newRoot, MEMORY_ORDER_RELEASE))
                 return oldRootPtr;
 
             backoff.Pause();

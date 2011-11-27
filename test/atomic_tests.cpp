@@ -81,7 +81,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(CompareAndSwapSucceedTest, T, AtomicTypes)
     Atomic<T> value = 0;
 
     T cmp = 0;
-    bool const swapped = value.CompareAndSwap(123, cmp);
+    bool const swapped = value.CompareAndSwap(cmp, 123);
     BOOST_CHECK(swapped);
     BOOST_CHECK_EQUAL(cmp, T(0));
     BOOST_CHECK_EQUAL(value, T(123));
@@ -92,7 +92,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(CompareAndSwapFailTest, T, AtomicTypes)
     Atomic<T> value = 0;
  
     T cmp = 123;
-    bool const swapped = value.CompareAndSwap(0, cmp);
+    bool const swapped = value.CompareAndSwap(cmp, 0);
     BOOST_CHECK(!swapped);
     BOOST_CHECK_EQUAL(cmp, T(0));
     BOOST_CHECK_EQUAL(value, T(0));

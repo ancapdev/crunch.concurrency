@@ -23,7 +23,7 @@ bool Event::AddWaiter(Waiter* waiter)
 
         waiter->next = Detail::WaiterList::GetPointer(head);
         std::uint64_t const newHead = Detail::WaiterList::SetPointer(head, waiter) + Detail::WaiterList::ABA_ADDEND;
-        if (mWaiters.CompareAndSwap(newHead, head))
+        if (mWaiters.CompareAndSwap(head, newHead))
             return true;
 
         backoff.Pause();
@@ -57,7 +57,7 @@ void Event::Set()
             {
                 // No waiters to notify, only need to set state bit
                 std::uint64_t const newHead = (head | EVENT_SET_BIT) + Detail::WaiterList::ABA_ADDEND;
-                if (mWaiters.CompareAndSwap(newHead, head))
+                if (mWaiters.CompareAndSwap(head, newHead))
                     return;
             }
             else
@@ -68,7 +68,7 @@ void Event::Set()
                     Detail::WaiterList::LOCK_BIT | EVENT_SET_BIT) +
                     Detail::WaiterList::ABA_ADDEND;
 
-                if (mWaiters.CompareAndSwap(lockedHead, head))
+                if (mWaiters.CompareAndSwap(head, lockedHead))
                 {
                     NotifyAllWaiters(Detail::WaiterList::GetPointer(head));
                     mWaiters.Unlock();

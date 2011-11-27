@@ -48,7 +48,7 @@ public:
         return result.value;
     }
 
-    bool CompareAndSwap(ValueType src, ValueType& cmp, MemoryOrder ordering = MEMORY_ORDER_SEQ_CST) volatile
+    bool CompareAndSwap(ValueType& cmp, ValueType src, MemoryOrder ordering = MEMORY_ORDER_SEQ_CST) volatile
     {
         Converter src_;
         src_.value = src;
@@ -56,17 +56,17 @@ public:
         Converter cmp_;
         cmp_.value = cmp;
 
-        bool const result = Platform::AtomicCompareAndSwap(mData.bits, src_.bits, cmp_.bits, ordering);
+        bool const result = Platform::AtomicCompareAndSwap(mData.bits, cmp_.bits, src_.bits, ordering);
         cmp = cmp_.value;
         return result;
     }
 
-    bool CompareAndSwap(ValueType src, WordType& cmp, MemoryOrder ordering = MEMORY_ORDER_SEQ_CST) volatile
+    bool CompareAndSwap(WordType& cmp, ValueType src, MemoryOrder ordering = MEMORY_ORDER_SEQ_CST) volatile
     {
         Converter src_;
         src_.value = src;
 
-        return Platform::AtomicCompareAndSwap(mData.bits, src_.bits, cmp, ordering);
+        return Platform::AtomicCompareAndSwap(mData.bits, cmp, src_.bits, ordering);
     }
 
     operator ValueType () const volatile
@@ -115,9 +115,9 @@ public:
         return Platform::AtomicSwap(mData.bits, src, ordering);
     }
 
-    bool CompareAndSwap(ValueType src, ValueType& cmp, MemoryOrder ordering = MEMORY_ORDER_SEQ_CST) volatile
+    bool CompareAndSwap(ValueType& cmp, ValueType src, MemoryOrder ordering = MEMORY_ORDER_SEQ_CST) volatile
     {
-        return Platform::AtomicCompareAndSwap(mData.bits, src, cmp, ordering);
+        return Platform::AtomicCompareAndSwap(mData.bits, cmp, src, ordering);
     }
 
     operator ValueType () const volatile
@@ -376,9 +376,9 @@ public:
 
 
 template<typename T>
-T AtomicCompareAndSwap(Atomic<T> volatile& dst, T src, T cmp, MemoryOrder ordering = MEMORY_ORDER_SEQ_CST)
+T AtomicCompareAndSwap(Atomic<T> volatile& dst, T& cmp, T src, MemoryOrder ordering = MEMORY_ORDER_SEQ_CST)
 {
-    return dst.CompareAndSwap(src, cmp, ordering);
+    return dst.CompareAndSwap(cmp, src, ordering);
 }
 
 }}

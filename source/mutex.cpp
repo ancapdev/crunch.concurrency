@@ -15,7 +15,7 @@ Mutex::Mutex(std::uint32_t spinCount)
 void Mutex::Lock()
 {
     std::uint64_t head = MUTEX_FREE_BIT;
-    if (mWaiters.CompareAndSwap(0, head))
+    if (mWaiters.CompareAndSwap(head, 0))
         return;
     
     std::uint32_t spinLeft = mSpinCount;
@@ -24,7 +24,7 @@ void Mutex::Lock()
         head = mWaiters.Load(MEMORY_ORDER_RELAXED);
         if (head == MUTEX_FREE_BIT)
         {
-            if (mWaiters.CompareAndSwap(0, head))
+            if (mWaiters.CompareAndSwap(head, 0))
                 return;
         }
         CRUNCH_PAUSE();
@@ -36,7 +36,7 @@ void Mutex::Lock()
 void Mutex::Unlock()
 {
     std::uint64_t head = 0;
-    if (mWaiters.CompareAndSwap(MUTEX_FREE_BIT, head))
+    if (mWaiters.CompareAndSwap(head, MUTEX_FREE_BIT))
         return;
 
     ExponentialBackoff backoff;
@@ -50,7 +50,7 @@ void Mutex::Unlock()
             CRUNCH_ASSERT((head & Detail::WaiterList::LOCK_BIT) == 0);
 
             // No waiters, attempt to set free bit.
-            if (mWaiters.CompareAndSwap(MUTEX_FREE_BIT, head))
+            if (mWaiters.CompareAndSwap(head, MUTEX_FREE_BIT))
                 return;
         }
         else if (head & Detail::WaiterList::LOCK_BIT)
@@ -65,7 +65,7 @@ void Mutex::Unlock()
                 Detail::WaiterList::SetPointer(head, headPtr->next) +
                 Detail::WaiterList::ABA_ADDEND;
 
-            if (mWaiters.CompareAndSwap(newHead, head))
+            if (mWaiters.CompareAndSwap(head, newHead))
             {
                 headPtr->Notify();
                 return;
@@ -84,7 +84,7 @@ bool Mutex::IsLocked() const
 bool Mutex::AddWaiter(Waiter* waiter)
 {
     std::uint64_t head = MUTEX_FREE_BIT;
-    if (mWaiters.CompareAndSwap(0, head))
+    if (mWaiters.CompareAndSwap(head, 0))
         return false;
 
     ExponentialBackoff backoff;
@@ -94,7 +94,7 @@ bool Mutex::AddWaiter(Waiter* waiter)
         {
             // Mutex is unlocked. Attempt to lock.
             CRUNCH_ASSERT(head == MUTEX_FREE_BIT);
-            if (mWaiters.CompareAndSwap(0, head))
+            if (mWaiters.CompareAndSwap(head, 0))
                 return false;
         }
         else
@@ -102,7 +102,7 @@ bool Mutex::AddWaiter(Waiter* waiter)
             // Mutex is locked, attempt to insert waiter
             waiter->next = Detail::WaiterList::GetPointer(head);
             std::uint64_t const newHead = Detail::WaiterList::SetPointer(head, waiter) + Detail::WaiterList::ABA_ADDEND;
-            if (mWaiters.CompareAndSwap(newHead, head))
+            if (mWaiters.CompareAndSwap(head, newHead))
                 return true;
         }
 

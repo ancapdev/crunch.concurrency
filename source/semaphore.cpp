@@ -31,7 +31,7 @@ void Semaphore::Post()
                     Detail::WaiterList::SetPointer(head, headPtr->next) +
                     Detail::WaiterList::ABA_ADDEND;
 
-                if (mWaiters.CompareAndSwap(newHead, head))
+                if (mWaiters.CompareAndSwap(head, newHead))
                 {
                     headPtr->Notify();
                     return;
@@ -60,7 +60,7 @@ bool Semaphore::AddWaiter(Waiter* waiter)
                 Detail::WaiterList::SetPointer(head, waiter) +
                 Detail::WaiterList::ABA_ADDEND;
 
-            if (mWaiters.CompareAndSwap(newHead, head))
+            if (mWaiters.CompareAndSwap(head, newHead))
                 return true;
 
             backoff.Pause();

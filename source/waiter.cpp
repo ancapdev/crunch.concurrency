@@ -42,7 +42,7 @@ namespace
                 else
                 {
                     std::uint64_t const newHead = SetPointer(head, headPtr->next) + ABA_ADDEND;
-                    if (mFreeList.CompareAndSwap(newHead, head))
+                    if (mFreeList.CompareAndSwap(head, newHead))
                         return headPtr;
                 }
             }
@@ -56,7 +56,7 @@ namespace
             {
                 node->next = GetPointer(head);
                 std::uint64_t const newHead = SetPointer(head, node) + ABA_ADDEND;
-                if (mFreeList.CompareAndSwap(newHead, head))
+                if (mFreeList.CompareAndSwap(head, newHead))
                     return;
             }
         }

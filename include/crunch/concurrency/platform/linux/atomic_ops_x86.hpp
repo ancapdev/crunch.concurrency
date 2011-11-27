@@ -149,7 +149,7 @@ inline int64_t AtomicSwap(int64_t volatile& dst, int64_t src, MemoryOrder = MEMO
 }
 #endif
 
-inline bool AtomicCompareAndSwap(int16_t volatile& dst, int16_t src, int16_t& cmp, MemoryOrder = MEMORY_ORDER_SEQ_CST)
+inline bool AtomicCompareAndSwap(int16_t volatile& dst, int16_t& cmp, int16_t src, MemoryOrder = MEMORY_ORDER_SEQ_CST)
 {
     CRUNCH_ASSERT_ALIGNMENT(&dst, 2);
     // TODO: Comparison is redundant, but intrinsics don't expose both comparison result and old value
@@ -159,7 +159,7 @@ inline bool AtomicCompareAndSwap(int16_t volatile& dst, int16_t src, int16_t& cm
     return cmp == cmp_;
 }
 
-inline bool AtomicCompareAndSwap(int32_t volatile& dst, int32_t src, int32_t& cmp, MemoryOrder = MEMORY_ORDER_SEQ_CST)
+inline bool AtomicCompareAndSwap(int32_t volatile& dst, int32_t& cmp, int32_t src, MemoryOrder = MEMORY_ORDER_SEQ_CST)
 {
     CRUNCH_ASSERT_ALIGNMENT(&dst, 4);
     // TODO: Comparison is redundant, but intrinsics don't expose both comparison result and old value
@@ -169,7 +169,7 @@ inline bool AtomicCompareAndSwap(int32_t volatile& dst, int32_t src, int32_t& cm
     return cmp == cmp_;
 }
 
-inline bool AtomicCompareAndSwap(int64_t volatile& dst, int64_t src, int64_t& cmp, MemoryOrder = MEMORY_ORDER_SEQ_CST)
+inline bool AtomicCompareAndSwap(int64_t volatile& dst, int64_t& cmp, int64_t src, MemoryOrder = MEMORY_ORDER_SEQ_CST)
 {
     CRUNCH_ASSERT_ALIGNMENT(&dst, 8);
     // TODO: Comparison is redundant, but intrinsics don't expose both comparison result and old value
@@ -180,7 +180,7 @@ inline bool AtomicCompareAndSwap(int64_t volatile& dst, int64_t src, int64_t& cm
 }
 
 #if defined (CRUNCH_ARCH_X86_64)
-inline bool AtomicCompareAndSwap(AtomicWord16 volatile& dst, AtomicWord16 src, AtomicWord16& cmp, MemoryOrder = MEMORY_ORDER_SEQ_CST)
+inline bool AtomicCompareAndSwap(AtomicWord16 volatile& dst, AtomicWord16& cmp, AtomicWord16 src, MemoryOrder = MEMORY_ORDER_SEQ_CST)
 {
     CRUNCH_ASSERT_ALIGNMENT(&dst, 16);
     // TODO: Comparison is redundant, but intrinsics don't expose both comparison result and old value

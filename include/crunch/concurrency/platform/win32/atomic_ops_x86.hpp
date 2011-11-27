@@ -171,7 +171,7 @@ inline __int64 AtomicSwap(__int64 volatile& dst, __int64 src, MemoryOrder = MEMO
 }
 
 
-inline bool AtomicCompareAndSwap(short volatile& dst, short src, short& cmp, MemoryOrder = MEMORY_ORDER_SEQ_CST)
+inline bool AtomicCompareAndSwap(short volatile& dst, short& cmp, short src, MemoryOrder = MEMORY_ORDER_SEQ_CST)
 {
     CRUNCH_ASSERT_ALIGNMENT(&dst, 2);
     short cmp_ = cmp;
@@ -179,7 +179,7 @@ inline bool AtomicCompareAndSwap(short volatile& dst, short src, short& cmp, Mem
     return cmp_ == cmp;
 }
 
-inline bool AtomicCompareAndSwap(long volatile& dst, long src, long& cmp, MemoryOrder = MEMORY_ORDER_SEQ_CST)
+inline bool AtomicCompareAndSwap(long volatile& dst, long& cmp, long src, MemoryOrder = MEMORY_ORDER_SEQ_CST)
 {
     CRUNCH_ASSERT_ALIGNMENT(&dst, 4);
     long cmp_ = cmp;
@@ -187,7 +187,7 @@ inline bool AtomicCompareAndSwap(long volatile& dst, long src, long& cmp, Memory
     return cmp_ == cmp;
 }
 
-inline bool AtomicCompareAndSwap(__int64 volatile& dst, __int64 src, __int64& cmp, MemoryOrder = MEMORY_ORDER_SEQ_CST)
+inline bool AtomicCompareAndSwap(__int64 volatile& dst, __int64& cmp, __int64 src, MemoryOrder = MEMORY_ORDER_SEQ_CST)
 {
     CRUNCH_ASSERT_ALIGNMENT(&dst, 8);
     __int64 cmp_ = cmp;
@@ -196,7 +196,7 @@ inline bool AtomicCompareAndSwap(__int64 volatile& dst, __int64 src, __int64& cm
 }
 
 #if defined (CRUNCH_ARCH_X86_64)
-inline bool AtomicCompareAndSwap(__m128i volatile& dst, __m128i src, __m128i& cmp, MemoryOrder = MEMORY_ORDER_SEQ_CST)
+inline bool AtomicCompareAndSwap(__m128i volatile& dst, __m128i& cmp, __m128i src, MemoryOrder = MEMORY_ORDER_SEQ_CST)
 {
     CRUNCH_ASSERT_ALIGNMENT(&dst, 16);
 

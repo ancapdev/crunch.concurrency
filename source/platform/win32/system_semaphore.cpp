@@ -40,7 +40,7 @@ bool SystemSemaphore::TryWait()
         if (count <= 0)
             return false;
 
-        if (mCount.CompareAndSwap(count - 1, count))
+        if (mCount.CompareAndSwap(count, count - 1))
             return true;
     }
 }

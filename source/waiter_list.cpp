@@ -29,13 +29,13 @@ bool WaiterList::RemoveWaiter(Waiter* waiter)
             {
                 // If waiter is at head, do simple pop
                 std::uint64_t const newHead = SetPointer(head, headPtr->next) + ABA_ADDEND;
-                if (CompareAndSwap(newHead, head))
+                if (CompareAndSwap(head, newHead))
                     return true;
             }
             else
             {
                 // Lock list from concurrent removal. Scan and remove waiter.
-                if (CompareAndSwap((head | LOCK_BIT) + ABA_ADDEND, head))
+                if (CompareAndSwap(head, (head | LOCK_BIT) + ABA_ADDEND))
                 {
                     bool removed = RemoveWaiterFromListNotAtHead(headPtr, waiter);
                     And(~LOCK_BIT, MEMORY_ORDER_RELEASE);

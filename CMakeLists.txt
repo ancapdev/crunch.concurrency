@@ -34,6 +34,7 @@ vpm_add_library(crunch_concurrency_lib
   include/crunch/concurrency/spin_barrier.hpp
   include/crunch/concurrency/thread.hpp
   include/crunch/concurrency/thread_local.hpp
+  include/crunch/concurrency/versioned_data.hpp
   include/crunch/concurrency/wait_mode.hpp
   include/crunch/concurrency/waitable.hpp
   include/crunch/concurrency/waiter.hpp

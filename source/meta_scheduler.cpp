@@ -16,54 +16,49 @@
 
 namespace Crunch { namespace Concurrency {
 
-MetaScheduler::RunMode::RunMode(Type type, std::uint32_t count, Duration duration)
+RunMode::RunMode(Type type, std::uint32_t count, Duration duration)
     : mType(type)
     , mCount(count)
     , mDuration(duration)
 {}
 
-MetaScheduler::RunMode MetaScheduler::RunMode::Disabled()
+RunMode RunMode::Disabled()
 {
     return RunMode(TYPE_DISABLED, 0, Duration::Zero);
 }
 
-MetaScheduler::RunMode MetaScheduler::RunMode::Some(std::uint32_t count)
+RunMode RunMode::Some(std::uint32_t count)
 {
     return RunMode(TYPE_SOME, count, Duration::Zero);
 }
 
-MetaScheduler::RunMode MetaScheduler::RunMode::Timed(Duration duration)
+RunMode RunMode::Timed(Duration duration)
 {
     return RunMode(TYPE_TIMED, 0, duration);
 }
 
-MetaScheduler::RunMode MetaScheduler::RunMode::All()
+RunMode RunMode::All()
 {
     return RunMode(TYPE_ALL, 0, Duration::Zero);
 }
 
-MetaScheduler::Configuration::Group::Group(std::uint32_t id, RunMode defaultRunMode)
-    : id(id)
+MetaScheduler::SchedulerInfo::SchedulerInfo(SchedulerPtr const& scheduler, std::uint32_t id, RunMode defaultRunMode)
+    : scheduler(scheduler)
+    , id(id)
     , defaultRunMode(defaultRunMode)
 {}
 
-void MetaScheduler::Configuration::AddGroup(std::uint32_t id, RunMode defaultRunMode)
+void MetaScheduler::Config::AddScheduler(SchedulerPtr const& scheduler, std::uint32_t id, RunMode defaultRunMode)
 {
-    CRUNCH_ASSERT_MSG_ALWAYS(std::find_if(mGroups.begin(), mGroups.end(), [=] (Group const& group) { return group.id == id; }) == mGroups.end(), "Scheduler group already exists");
-    mGroups.push_back(Group(id, defaultRunMode));
-}
-
-void MetaScheduler::Configuration::AddScheduler(std::uint32_t groupId, SchedulerPtr const& scheduler)
-{
-    auto it = std::find_if(mGroups.begin(), mGroups.end(), [=] (Group const& group) { return group.id == groupId; });
-    CRUNCH_ASSERT_MSG_ALWAYS(it != mGroups.end(), "Invalid scheduler group");
-    it->schedulers.push_back(scheduler);
+    auto it = std::find_if(mSchedulers.begin(), mSchedulers.end(), [=] (SchedulerInfo const& info) { return info.id == id; });
+    CRUNCH_ASSERT_MSG_ALWAYS(it != mSchedulers.end(), "Scheduler with ID=%d already added", id);
+    mSchedulers.push_back(SchedulerInfo(scheduler, id, defaultRunMode));
 }
 
 class MetaScheduler::ContextImpl : public MetaScheduler::Context, NonCopyable
 {
 public:
-    ContextImpl(MetaScheduler* owner)
+    ContextImpl(MetaScheduler& owner)
         : mOwner(owner)
         , mWaitSemaphore(0)
         , mRefCount(1)
@@ -78,7 +73,7 @@ public:
         mWaiterDestroyer();
     }
 
-    MetaScheduler* GetOwner()
+    MetaScheduler& GetOwner()
     {
         return mOwner;
     }
@@ -88,8 +83,43 @@ public:
         mRefCount++;
     }
 
-    void Run(IWaitable& /*until*/)
+    void Run(IWaitable& until)
     {
+        volatile bool searchingForMetaThread = true;
+        volatile bool stop = false;
+
+        until.AddWaiter([&]
+        {
+            stop = true;
+            if (searchingForMetaThread)
+            {
+                Detail::SystemMutex::ScopedLock const lock(mOwner.mIdleMetaThreadsLock);
+                // Only wake all if meta thread list is empty and we're still searching for meta thread
+                if (mOwner.mIdleMetaThreads.empty() && searchingForMetaThread)
+                    mOwner.mIdleMetaThreadAvailable.WakeAll();
+            }
+        });
+
+        MetaThreadPtr metaThread;
+        {
+            Detail::SystemMutex::ScopedLock const lock(mOwner.mIdleMetaThreadsLock);
+            for (;;)
+            {
+                if (stop)
+                    return;
+
+                if (!mOwner.mIdleMetaThreads.empty())
+                    break;
+
+                mOwner.mIdleMetaThreadAvailable.Wait(mOwner.mIdleMetaThreadsLock);
+            }
+
+            metaThread = std::move(mOwner.mIdleMetaThreads.back());
+            mOwner.mIdleMetaThreads.pop_back();
+            searchingForMetaThread = false;
+        }
+
+
         // while not done
         //     Acquire idle meta thread
         //     Affinitize to meta thread processor affinity
@@ -222,7 +252,7 @@ public:
     }
 
 private:
-    MetaScheduler* mOwner;
+    MetaScheduler& mOwner;
     std::uint32_t mRefCount;
     Detail::SystemSemaphore mWaitSemaphore;
     Waiter* mWaiter;
@@ -241,19 +271,14 @@ void MetaScheduler::Context::Release()
 
 CRUNCH_THREAD_LOCAL MetaScheduler::ContextImpl* MetaScheduler::tCurrentContext = NULL;
 
-class MetaScheduler::MetaThread
+struct MetaScheduler::MetaThread
 {
-public:
-    MetaThread(MetaThreadConfig const& config)
-        : mConfig(config)
-    {}
-
-private:
-    MetaThreadConfig mConfig;
+    ProcessorAffinity processorAffinity;
+    std::map<std::uint32_t, RunMode> runModeOverrides;
 };
 
-MetaScheduler::MetaScheduler(const Configuration& configuration)
-    : mConfiguration(configuration)
+MetaScheduler::MetaScheduler(const Config& config)
+    : mSchedulers(config.mSchedulers)
 {}
 
 MetaScheduler::~MetaScheduler()
@@ -261,9 +286,12 @@ MetaScheduler::~MetaScheduler()
 
 MetaScheduler::MetaThreadHandle MetaScheduler::CreateMetaThread(MetaThreadConfig const& config)
 {
-    Detail::SystemMutex::ScopedLock lock(mMetaThreadsLock);
+    // TODO: signal any threads waiting for idle meta threads
 
-    MetaThreadPtr mt(new MetaThread(config));
+    Detail::SystemMutex::ScopedLock lock(mIdleMetaThreadsLock);
+    MetaThreadPtr mt(new MetaThread());
+    mt->processorAffinity = config.mProcessorAffinity;
+    mt->runModeOverrides = config.mRunModeOverrides;
     mIdleMetaThreads.push_back(std::move(mt));
     return MetaThreadHandle();
 }
@@ -272,11 +300,11 @@ MetaScheduler::Context& MetaScheduler::AcquireContext()
 {
     if (tCurrentContext == nullptr)
     {
-        tCurrentContext = new ContextImpl(this);
+        tCurrentContext = new ContextImpl(*this);
     }
     else
     {
-        CRUNCH_ASSERT_MSG(tCurrentContext->GetOwner() == this, "Context belongs to different MetaScheduler instance");
+        CRUNCH_ASSERT_MSG(&tCurrentContext->GetOwner() == this, "Context belongs to different MetaScheduler instance");
         tCurrentContext->AddRef();
     }
 

@@ -9,90 +9,55 @@
 #include "crunch/concurrency/scheduler.hpp"
 #include "crunch/concurrency/thread_local.hpp"
 #include "crunch/concurrency/waitable.hpp"
+#include "crunch/concurrency/detail/system_condition.hpp"
 #include "crunch/concurrency/detail/system_mutex.hpp"
 
 #include <cstdint>
+#include <map>
 #include <memory>
 #include <vector>
 
 namespace Crunch { namespace Concurrency {
 
+class RunMode
+{
+public:
+    static RunMode Disabled();
+    static RunMode Some(std::uint32_t count);
+    static RunMode Timed(Duration duration);
+    static RunMode All();
+
+private:
+    enum Type
+    {
+        TYPE_DISABLED,
+        TYPE_SOME,
+        TYPE_TIMED,
+        TYPE_ALL
+    };
+
+    RunMode(Type type, std::uint32_t count, Duration duration);
+
+    Type mType;
+    std::uint32_t mCount;
+    Duration mDuration;
+};
+
 // Very simple scheduler to manage processing resources and run multiple cooperative schedulers. E.g.,
 // - task scheduler
 // - io_service scheduler
 // - fiber / coroutine scheduler
-// TODO: Add suppor for threads that haven't joined the scheduler to call WaitForXXX
+// TODO: Add support for threads that haven't joined the scheduler to call WaitForXXX
 class MetaScheduler
 {
 public:
-    class RunMode
-    {
-    public:
-        static RunMode Disabled();
-        static RunMode Some(std::uint32_t count);
-        static RunMode Timed(Duration duration);
-        static RunMode All();
-
-    private:
-        enum Type
-        {
-            TYPE_DISABLED,
-            TYPE_SOME,
-            TYPE_TIMED,
-            TYPE_ALL
-        };
-
-        RunMode(Type type, std::uint32_t count, Duration duration);
-
-        Type mType;
-        std::uint32_t mCount;
-        Duration mDuration;
-    };
-
+    class Config;
+    class MetaThreadConfig;
+    class MetaThreadHandle {};
     typedef std::shared_ptr<IScheduler> SchedulerPtr;
-    typedef std::vector<SchedulerPtr> SchedulerList;
 
-    class Configuration
-    {
-    public:
-        void AddGroup(std::uint32_t id, RunMode defaultRunMode);
-        void AddScheduler(std::uint32_t groupId, SchedulerPtr const& scheduler);
-
-    private:
-        struct Group
-        {
-            Group(std::uint32_t id, RunMode defaultRunMode);
-
-            std::uint32_t id;
-            RunMode defaultRunMode;
-            std::vector<SchedulerPtr> schedulers;
-        };
-
-        std::vector<Group> mGroups;
-    };
-
-    MetaScheduler(Configuration const& configuration);
+    MetaScheduler(Config const& config);
     ~MetaScheduler();
-
-    class MetaThreadConfig
-    {
-    public:
-        MetaThreadConfig() : mSchedulerAffinity(0xfffffffful) {}
-
-        void SetSchedulerAffinity(std::uint32_t affinity) { mSchedulerAffinity = affinity; }
-        std::uint32_t GetSchedulerAffinity() const { return mSchedulerAffinity; }
-
-        void SetProcessorAffinity(ProcessorAffinity const& affinity) { mProcessorAffinity = affinity; }
-        ProcessorAffinity const& GetProcessorAffinity() const { return mProcessorAffinity; }
-
-    private:
-        std::uint32_t mSchedulerAffinity; ///> Determines which schedulers run on this meta thread
-        ProcessorAffinity mProcessorAffinity;
-    };
-
-    class MetaThreadHandle
-    {
-    };
 
     MetaThreadHandle CreateMetaThread(MetaThreadConfig const& config);
 
@@ -110,7 +75,9 @@ private:
     friend void WaitForAll(IWaitable**, std::size_t, WaitMode);
     friend WaitForAnyResult WaitForAny(IWaitable**, std::size_t, WaitMode);
 
-    class MetaThread;
+    friend class Config;
+
+    struct MetaThread;
     typedef std::unique_ptr<MetaThread> MetaThreadPtr;
     typedef std::vector<MetaThreadPtr> MetaThreadList;
 
@@ -118,15 +85,51 @@ private:
     typedef std::unique_ptr<ContextImpl> ContextPtr;
     typedef std::vector<ContextPtr> ContextList;
 
-    Configuration mConfiguration;
-
+    Detail::SystemMutex mIdleMetaThreadsLock;
     MetaThreadList mIdleMetaThreads;
-    Detail::SystemMutex mMetaThreadsLock;
+    Detail::SystemCondition mIdleMetaThreadAvailable;
 
-    ContextList mContexts;
     Detail::SystemMutex mContextsLock;
+    ContextList mContexts;
+
+    struct SchedulerInfo
+    {
+        SchedulerInfo(SchedulerPtr const& scheduler, std::uint32_t id, RunMode defaultRunMode);
+
+        SchedulerPtr scheduler;
+        std::uint32_t id;
+        RunMode defaultRunMode;
+    };
+
+    typedef std::vector<SchedulerInfo> SchedulerInfoList;
+    SchedulerInfoList mSchedulers;
 
     static CRUNCH_THREAD_LOCAL ContextImpl* tCurrentContext;
+};
+
+
+class MetaScheduler::Config
+{
+public:
+    void AddScheduler(SchedulerPtr const& scheduler, std::uint32_t id, RunMode defaultRunMode);
+
+private:
+    friend class MetaScheduler;
+
+    std::vector<SchedulerInfo> mSchedulers;
+};
+
+class MetaScheduler::MetaThreadConfig
+{
+public:
+    void SetRunModeOverride(std::uint32_t schedulerId, RunMode runMode);
+    void SetProcessorAffinity(ProcessorAffinity const& affinity) { mProcessorAffinity = affinity; }
+
+private:
+    friend class MetaScheduler;
+
+    ProcessorAffinity mProcessorAffinity;
+    std::map<std::uint32_t, RunMode> mRunModeOverrides;
 };
 
 }}

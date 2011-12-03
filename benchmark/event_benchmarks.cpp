@@ -3,6 +3,8 @@
 
 #include "crunch/concurrency/event.hpp"
 
+#include "crunch/base/ignore_result.hpp"
+
 #include "crunch/benchmarking/stopwatch.hpp"
 #include "crunch/benchmarking/statistical_profiler.hpp"
 #include "crunch/benchmarking/result_table.hpp"
@@ -47,7 +49,7 @@ BOOST_AUTO_TEST_CASE(RemoveMe)
             for (int i = 0; i < reps; ++i)
             {
                 for (int j = 0; j < count; ++j)
-                    event.AddWaiter(waiters[j]);
+                    IgnoreResult(event.AddWaiter(waiters[j]));
                 /*
                 for (int j = 0; j < count; ++j)
                     event.RemoveWaiter(waiters[j]);

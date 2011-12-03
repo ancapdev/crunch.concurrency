@@ -14,6 +14,7 @@
 #include "crunch/concurrency/detail/system_semaphore.hpp"
 
 #include <algorithm>
+#include <stdexcept>
 
 namespace Crunch { namespace Concurrency {
 

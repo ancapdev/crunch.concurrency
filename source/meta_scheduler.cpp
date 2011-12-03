@@ -103,26 +103,27 @@ public:
             waiterDone.Post();
         }, false);
 
-        interrupt.AddWaiter(waiter);
-
         MetaThreadPtr metaThread;
-        {
-            Detail::SystemMutex::ScopedLock const lock(mOwner.mIdleMetaThreadsLock);
-            while (!stop && mOwner.mIdleMetaThreads.empty())
-                mOwner.mIdleMetaThreadAvailable.Wait(mOwner.mIdleMetaThreadsLock);
 
-            if (!mOwner.mIdleMetaThreads.empty())
+        if (interrupt.AddWaiter(waiter))
+        {
             {
-                metaThread = std::move(mOwner.mIdleMetaThreads.back());
-                mOwner.mIdleMetaThreads.pop_back();
+                Detail::SystemMutex::ScopedLock const lock(mOwner.mIdleMetaThreadsLock);
+                while (!stop && mOwner.mIdleMetaThreads.empty())
+                    mOwner.mIdleMetaThreadAvailable.Wait(mOwner.mIdleMetaThreadsLock);
+
+                if (!mOwner.mIdleMetaThreads.empty())
+                {
+                    metaThread = std::move(mOwner.mIdleMetaThreads.back());
+                    mOwner.mIdleMetaThreads.pop_back();
+                }
             }
+
+            if (!interrupt.RemoveWaiter(waiter))
+                waiterDone.Wait();
         }
 
-        if (!interrupt.RemoveWaiter(waiter))
-            waiterDone.Wait();
-
         waiter->Destroy();
-
         return metaThread;
     }
 
@@ -242,23 +243,25 @@ public:
         if (!metaThread)
             return;
 
-        // TODO: reset affinity on exit
-        ProcessorAffinity oldAffinity;
-        if (!metaThread->processorAffinity.IsEmpty())
-            oldAffinity = SetCurrentThreadAffinity(metaThread->processorAffinity);
-
         Detail::SystemMutex stateLock;
         Detail::SystemCondition stateChanged;
         volatile bool stop = false;
         volatile std::size_t activeCount = 0;
 
-        until.AddWaiter([&]
+        if (!until.AddWaiter([&]
         {
             Detail::SystemMutex::ScopedLock const lock(stateLock);
             stop = true;
             if (activeCount == 0)
                 stateChanged.WakeAll();
-        });
+        }))
+        {
+            return;
+        }
+
+        ProcessorAffinity oldAffinity;
+        if (!metaThread->processorAffinity.IsEmpty())
+            oldAffinity = SetCurrentThreadAffinity(metaThread->processorAffinity);
 
         std::vector<std::unique_ptr<SchedulerState>> schedulers;
         for (auto it = mOwner.mSchedulers.begin(); it != mOwner.mSchedulers.end(); ++it)
@@ -327,11 +330,18 @@ public:
                     if (ss->lastState == ISchedulerContext::State::Polling)
                         pollingCount--;
 
-                    idleSchedulers.push_back(ss);
-                    it = activeSchedulers.erase(it);
                     Detail::SystemMutex::ScopedLock const lock(stateLock);
-                    activeCount--;
-                    ss->hasWorkCondition->AddWaiter(ss->hasWorkWaiter);
+                    if (ss->hasWorkCondition->AddWaiter(ss->hasWorkWaiter))
+                    {
+                        ss->lastState = ISchedulerContext::State::Idle;
+                        idleSchedulers.push_back(ss);
+                        it = activeSchedulers.erase(it);
+                        activeCount--;
+                    }
+                    else
+                    {
+                        ss->lastState = ISchedulerContext::State::Working;
+                    }
                 }
                 else
                 {
@@ -341,10 +351,11 @@ public:
                             pollingCount++;
                         else
                             pollingCount--;
+
+                        ss->lastState = state;
                     }
                     ++it;
                 }
-                ss->lastState = state;
             }
 
             if (activeSchedulers.empty())

@@ -9,12 +9,15 @@ namespace Crunch { namespace Concurrency {
 
 void ThreadYield()
 {
-    SwitchToThread();
+    ::SwitchToThread();
 }
 
 void ThreadSleep(Duration duration)
 {
-    Sleep(static_cast<DWORD>(duration.GetTotalMilliseconds()));
+    if (duration.IsNegative())
+        return;
+
+    ::Sleep(static_cast<DWORD>(duration.GetTotalMilliseconds()));
 }
 
 }}

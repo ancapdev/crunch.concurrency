@@ -12,4 +12,9 @@ void ThreadYield()
     SwitchToThread();
 }
 
+void ThreadSleep(Duration duration)
+{
+    Sleep(static_cast<DWORD>(duration.GetTotalMilliseconds()));
+}
+
 }}

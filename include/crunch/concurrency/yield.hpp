@@ -5,6 +5,7 @@
 #define CRUNCH_CONCURRENCY_YIELD_HPP
 
 #include "crunch/base/platform.hpp"
+#include "crunch/base/duration.hpp"
 
 #if defined (CRUNCH_ARCH_X86)
 #   if defined (CRUNCH_COMPILER_MSVC) && defined (CRUNCH_ARCH_X86)
@@ -20,6 +21,9 @@ namespace Crunch { namespace Concurrency {
 
 /// Yield scheduler to another thread
 void ThreadYield();
+
+/// Sleep the thread
+void ThreadSleep(Duration duration);
 
 #if defined (CRUNCH_ARCH_X86)
 inline void Pause(int count)

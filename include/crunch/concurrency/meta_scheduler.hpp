@@ -28,6 +28,9 @@ public:
     static RunMode All();
 
 private:
+    // TODO: remove and create proper API
+    friend class MetaScheduler;
+
     enum Type
     {
         TYPE_DISABLED,

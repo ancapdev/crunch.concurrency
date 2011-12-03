@@ -12,7 +12,7 @@ namespace Crunch { namespace Concurrency {
     
 struct CRUNCH_NOVTABLE IThrottler
 {
-    virtual bool ShouldYield() const = 0;
+    virtual bool ShouldYield() = 0;
 
     virtual ~IThrottler() {}
 };
@@ -31,7 +31,9 @@ struct CRUNCH_NOVTABLE ISchedulerContext
     // - Run timed
     // - Run until IWaitable event
     // or a combination of such conditions
-    virtual State Run(IThrottler const& throttler) = 0;
+    virtual State Run(IThrottler& throttler) = 0;
+
+    virtual bool CanReEnter() = 0;
 
     virtual IWaitable& GetHasWorkCondition() = 0;
 
@@ -40,6 +42,8 @@ struct CRUNCH_NOVTABLE ISchedulerContext
 
 struct IScheduler
 {
+    virtual bool CanOrphan() = 0;
+    // Should be Acquire + Release Context
     virtual ISchedulerContext& GetContext() = 0;
 };
 

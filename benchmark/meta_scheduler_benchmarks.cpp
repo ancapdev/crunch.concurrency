@@ -28,7 +28,7 @@ BOOST_AUTO_TEST_CASE(SingleThreadedWaitForReadyWaitableBenchmark)
 {
     using namespace Benchmarking;
 
-    MetaScheduler::Configuration configuration;
+    MetaScheduler::Config configuration;
     MetaScheduler ms(configuration);
     MetaScheduler::Context& context = ms.AcquireContext();
     SetCurrentThreadAffinity(ProcessorAffinity(0));

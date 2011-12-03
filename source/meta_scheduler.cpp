@@ -4,6 +4,7 @@
 #include "crunch/concurrency/meta_scheduler.hpp"
 
 #include "crunch/base/assert.hpp"
+#include "crunch/base/high_frequency_timer.hpp"
 #include "crunch/base/inline.hpp"
 #include "crunch/base/noncopyable.hpp"
 #include "crunch/base/override.hpp"
@@ -42,6 +43,12 @@ RunMode RunMode::All()
     return RunMode(TYPE_ALL, 0, Duration::Zero);
 }
 
+struct MetaScheduler::MetaThread
+{
+    ProcessorAffinity processorAffinity;
+    std::map<std::uint32_t, RunMode> runModeOverrides;
+};
+
 MetaScheduler::SchedulerInfo::SchedulerInfo(SchedulerPtr const& scheduler, std::uint32_t id, RunMode defaultRunMode)
     : scheduler(scheduler)
     , id(id)
@@ -51,7 +58,7 @@ MetaScheduler::SchedulerInfo::SchedulerInfo(SchedulerPtr const& scheduler, std::
 void MetaScheduler::Config::AddScheduler(SchedulerPtr const& scheduler, std::uint32_t id, RunMode defaultRunMode)
 {
     auto it = std::find_if(mSchedulers.begin(), mSchedulers.end(), [=] (SchedulerInfo const& info) { return info.id == id; });
-    CRUNCH_ASSERT_MSG_ALWAYS(it != mSchedulers.end(), "Scheduler with ID=%d already added", id);
+    CRUNCH_ASSERT_MSG_ALWAYS(it == mSchedulers.end(), "Scheduler with ID=%d already added", id);
     mSchedulers.push_back(SchedulerInfo(scheduler, id, defaultRunMode));
 }
 
@@ -83,42 +90,280 @@ public:
         mRefCount++;
     }
 
-    void Run(IWaitable& until)
+    MetaThreadPtr WaitForMetaThread(IWaitable& interrupt)
     {
-        volatile bool searchingForMetaThread = true;
         volatile bool stop = false;
+        Detail::SystemSemaphore waiterDone(0);
 
-        until.AddWaiter([&]
+        auto waiter = Waiter::Create([&]
         {
             stop = true;
-            if (searchingForMetaThread)
-            {
-                Detail::SystemMutex::ScopedLock const lock(mOwner.mIdleMetaThreadsLock);
-                // Only wake all if meta thread list is empty and we're still searching for meta thread
-                if (mOwner.mIdleMetaThreads.empty() && searchingForMetaThread)
-                    mOwner.mIdleMetaThreadAvailable.WakeAll();
-            }
-        });
+            mOwner.mIdleMetaThreadAvailable.WakeAll();
+            waiterDone.Post();
+        }, false);
+
+        interrupt.AddWaiter(waiter);
 
         MetaThreadPtr metaThread;
         {
             Detail::SystemMutex::ScopedLock const lock(mOwner.mIdleMetaThreadsLock);
-            for (;;)
-            {
-                if (stop)
-                    return;
-
-                if (!mOwner.mIdleMetaThreads.empty())
-                    break;
-
+            while (!stop && mOwner.mIdleMetaThreads.empty())
                 mOwner.mIdleMetaThreadAvailable.Wait(mOwner.mIdleMetaThreadsLock);
-            }
 
-            metaThread = std::move(mOwner.mIdleMetaThreads.back());
-            mOwner.mIdleMetaThreads.pop_back();
-            searchingForMetaThread = false;
+            if (!mOwner.mIdleMetaThreads.empty())
+            {
+                metaThread = std::move(mOwner.mIdleMetaThreads.back());
+                mOwner.mIdleMetaThreads.pop_back();
+            }
         }
 
+        if (!interrupt.RemoveWaiter(waiter))
+            waiterDone.Wait();
+
+        waiter->Destroy();
+
+        return metaThread;
+    }
+
+    struct SchedulerState : NonCopyable
+    {
+        typedef ISchedulerContext::State (*RunFunction)(ISchedulerContext&, RunMode runMode, volatile bool& stop);
+
+        static ISchedulerContext::State RunAll(ISchedulerContext& schedulerContext, RunMode, volatile bool& stop)
+        {
+            struct Throttler : IThrottler, NonCopyable
+            {
+                Throttler(volatile bool& stop) : mStop(stop) {}
+
+                virtual bool ShouldYield() CRUNCH_OVERRIDE
+                {
+                    return mStop;
+                }
+
+                volatile bool& mStop;
+            };
+
+            Throttler throttler(stop);
+            return schedulerContext.Run(throttler);
+        }
+
+        static ISchedulerContext::State RunSome(ISchedulerContext& schedulerContext, RunMode runMode, volatile bool& stop)
+        {
+            struct Throttler : IThrottler, NonCopyable
+            {
+                Throttler(volatile bool& stop, std::uint32_t count) : mStop(stop), mCount(count) {}
+
+                virtual bool ShouldYield() CRUNCH_OVERRIDE
+                { 
+                    if (mStop || mCount == 0)
+                        return true;
+
+                    mCount--;
+                    return false;
+                }
+
+                volatile bool& mStop;
+                std::uint32_t mCount;
+            };
+
+            Throttler throttler(stop, runMode.mCount);
+            return schedulerContext.Run(throttler);
+        }
+
+        static ISchedulerContext::State RunTimed(ISchedulerContext& schedulerContext, RunMode runMode, volatile bool& stop)
+        {
+            struct Throttler : IThrottler, NonCopyable
+            {
+                Throttler(volatile bool& stop, Duration duration) : mStop(stop), mStart(mTimer.Sample()), mMaxDuration(duration) {}
+
+                virtual bool ShouldYield() CRUNCH_OVERRIDE
+                {
+                    return mStop || mTimer.GetElapsedTime(mStart, mTimer.Sample()) > mMaxDuration;
+                }
+
+                volatile bool& mStop;
+                HighFrequencyTimer mTimer;
+                HighFrequencyTimer::SampleType mStart;
+                Duration mMaxDuration;
+            };
+
+            Throttler throttler(stop, runMode.mDuration);
+            return schedulerContext.Run(throttler);
+        }
+
+        static RunFunction RunFunctionFromRunMode(RunMode runMode)
+        {
+            switch (runMode.mType)
+            {
+            case RunMode::TYPE_ALL: return &SchedulerState::RunAll;
+            case RunMode::TYPE_SOME: return &SchedulerState::RunSome;
+            case RunMode::TYPE_TIMED: return &SchedulerState::RunTimed;
+            default:
+                throw std::runtime_error("Invalid run mode");
+            }
+        }
+
+        SchedulerState(ISchedulerContext* context, RunMode runMode, std::function<void ()> const& notifyReady)
+            : context(context)
+            , lastState(ISchedulerContext::State::Working)
+            , hasWorkCondition(&context->GetHasWorkCondition())
+            , runMode(runMode)
+            , runner(RunFunctionFromRunMode(runMode))
+            , notifyReady(notifyReady)
+        {
+            hasWorkWaiter = Waiter::Create(notifyReady, false);
+        }
+
+        ~SchedulerState()
+        {
+            hasWorkWaiter->Destroy();
+        }
+
+        ISchedulerContext* context;
+        ISchedulerContext::State lastState;
+        IWaitable* hasWorkCondition;
+        Waiter::Typed<std::function<void ()>>* hasWorkWaiter;
+        RunMode runMode;
+        RunFunction runner;
+        std::function<void ()> notifyReady;
+    };
+
+    void Run(IWaitable& until)
+    {
+        MetaThreadPtr metaThread = WaitForMetaThread(until);
+        if (!metaThread)
+            return;
+
+        // TODO: reset affinity on exit
+        if (!metaThread->processorAffinity.IsEmpty())
+            SetCurrentThreadAffinity(metaThread->processorAffinity);
+
+        Detail::SystemMutex stateLock;
+        Detail::SystemCondition stateChanged;
+        volatile bool stop = false;
+        volatile std::size_t activeCount = 0;
+
+        until.AddWaiter([&]
+        {
+            Detail::SystemMutex::ScopedLock const lock(stateLock);
+            stop = true;
+            if (activeCount == 0)
+                stateChanged.WakeAll();
+        });
+
+        std::vector<std::unique_ptr<SchedulerState>> schedulers;
+        for (auto it = mOwner.mSchedulers.begin(); it != mOwner.mSchedulers.end(); ++it)
+        {
+            auto const runModeOverrideIt = metaThread->runModeOverrides.find(it->id);
+            RunMode const runMode = runModeOverrideIt != metaThread->runModeOverrides.end() ? runModeOverrideIt->second : it->defaultRunMode;
+            if (runMode.mType != runMode.TYPE_DISABLED)
+            {
+                std::size_t index = schedulers.size();
+                schedulers.push_back(std::unique_ptr<SchedulerState>(new SchedulerState(&it->scheduler->GetContext(), runMode, [&, index]
+                {
+                    Detail::SystemMutex::ScopedLock const lock(stateLock);
+                    if (activeCount++ == 0)
+                        stateChanged.WakeAll();
+
+                    schedulers[index]->lastState = ISchedulerContext::State::Working;
+                })));
+            }
+        }
+
+        std::size_t pollingCount = 0;
+        activeCount = schedulers.size();
+        std::vector<SchedulerState*> activeSchedulers;
+        std::vector<SchedulerState*> idleSchedulers;
+
+        // Start with all schedulers active
+        std::for_each(schedulers.begin(), schedulers.end(), [&] (std::unique_ptr<SchedulerState> const& schedulerState)
+        {
+            activeSchedulers.push_back(schedulerState.get());
+        });
+
+        for (;;)
+        {
+            if (stop)
+                goto stopped;
+
+            if (activeCount != activeSchedulers.size())
+            {
+                // One of the idle schedulers has been signaled ready
+                Detail::SystemMutex::ScopedLock const lock(stateLock);
+                for (auto it = idleSchedulers.begin(); it != idleSchedulers.end();)
+                {
+                    if ((*it)->lastState != ISchedulerContext::State::Idle)
+                    {
+                        activeSchedulers.push_back(*it);
+                        it = idleSchedulers.erase(it);
+                    }
+                    else
+                    {
+                        ++it;
+                    }
+                }
+                activeCount = activeSchedulers.size();
+            }
+
+            for (auto it = activeSchedulers.begin(); it != activeSchedulers.end();)
+            {
+                if (stop)
+                    goto stopped;
+
+                SchedulerState* ss = *it;
+                ISchedulerContext::State const state = ss->runner(*ss->context, ss->runMode, stop);
+
+                if (state == ISchedulerContext::State::Idle)
+                {
+                    if (ss->lastState == ISchedulerContext::State::Polling)
+                        pollingCount--;
+
+                    idleSchedulers.push_back(ss);
+                    it = activeSchedulers.erase(it);
+                    Detail::SystemMutex::ScopedLock const lock(stateLock);
+                    activeCount--;
+                    ss->hasWorkCondition->AddWaiter(ss->hasWorkWaiter);
+                }
+                else
+                {
+                    if (state != ss->lastState)
+                    {
+                        if (state == ISchedulerContext::State::Polling)
+                            pollingCount++;
+                        else
+                            pollingCount--;
+                    }
+                    ++it;
+                }
+                ss->lastState = state;
+            }
+
+            if (activeSchedulers.empty())
+            {
+                // No active schedulers, go idle.
+                // TODO: IWaitable until must also notify state changed
+                Detail::SystemMutex::ScopedLock const lock(stateLock);
+                while (activeCount == 0)
+                {
+                    if (stop)
+                        goto stopped;
+
+                    stateChanged.Wait(stateLock);
+                }
+            }
+
+            if (activeSchedulers.size() == pollingCount)
+            {
+                // All active schedulers are busy polling for work. Yield resources.
+                Pause(100);
+                ThreadYield();
+            }
+        }
+
+stopped:
+        // remove all waiters on idle schedulers
+        // release meta thread
+        return;
 
         // while not done
         //     Acquire idle meta thread
@@ -257,6 +502,9 @@ private:
     Detail::SystemSemaphore mWaitSemaphore;
     Waiter* mWaiter;
     std::function<void ()> mWaiterDestroyer;
+
+    // Detail::SystemMutex mStateLock;
+    // Detail::SystemSemaphore mStateChanged;
 };
 
 void MetaScheduler::Context::Run(IWaitable& until)
@@ -270,12 +518,6 @@ void MetaScheduler::Context::Release()
 }
 
 CRUNCH_THREAD_LOCAL MetaScheduler::ContextImpl* MetaScheduler::tCurrentContext = NULL;
-
-struct MetaScheduler::MetaThread
-{
-    ProcessorAffinity processorAffinity;
-    std::map<std::uint32_t, RunMode> runModeOverrides;
-};
 
 MetaScheduler::MetaScheduler(const Config& config)
     : mSchedulers(config.mSchedulers)

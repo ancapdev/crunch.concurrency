@@ -91,7 +91,7 @@ public:
         mRefCount++;
     }
 
-    MetaThreadPtr WaitForMetaThread(IWaitable& interrupt)
+    MetaThreadPtr AcquireMetaThread(IWaitable& interrupt)
     {
         volatile bool stop = false;
         Detail::SystemSemaphore waiterDone(0);
@@ -124,6 +124,13 @@ public:
         waiter->Destroy();
 
         return metaThread;
+    }
+
+    void ReleaseMetaThread(MetaThreadPtr&& metaThread)
+    {
+        Detail::SystemMutex::ScopedLock const lock(mOwner.mIdleMetaThreadsLock);
+        mOwner.mIdleMetaThreads.push_back(std::move(metaThread));
+        mOwner.mIdleMetaThreadAvailable.WakeOne();
     }
 
     struct SchedulerState : NonCopyable
@@ -221,7 +228,7 @@ public:
         }
 
         ISchedulerContext* context;
-        ISchedulerContext::State lastState;
+        volatile ISchedulerContext::State lastState;
         IWaitable* hasWorkCondition;
         Waiter::Typed<std::function<void ()>>* hasWorkWaiter;
         RunMode runMode;
@@ -231,13 +238,14 @@ public:
 
     void Run(IWaitable& until)
     {
-        MetaThreadPtr metaThread = WaitForMetaThread(until);
+        MetaThreadPtr metaThread = AcquireMetaThread(until);
         if (!metaThread)
             return;
 
         // TODO: reset affinity on exit
+        ProcessorAffinity oldAffinity;
         if (!metaThread->processorAffinity.IsEmpty())
-            SetCurrentThreadAffinity(metaThread->processorAffinity);
+            oldAffinity = SetCurrentThreadAffinity(metaThread->processorAffinity);
 
         Detail::SystemMutex stateLock;
         Detail::SystemCondition stateChanged;
@@ -362,39 +370,24 @@ public:
         }
 
 stopped:
-        // remove all waiters on idle schedulers
-        // release meta thread
-        return;
-
-        // while not done
-        //     Acquire idle meta thread
-        //     Affinitize to meta thread processor affinity
-        //     Set meta thread in TLS context
-        //     Add schedulers for meta thread
-        // 1:  Run schedulers until idle
-        //         If blocked (from within scheduler -- can't switch meta threads at this point)
-        //             If supported, re-enter scheduler until idle or not blocked or done
-        //             Release meta thread (put in high demand idle list to increase chance of re-acquiring)
-        //             Yield until not blocked or done
-        //             Wait for same meta thread to become available (actually.. must be able to migrate meta thread at this point or might starve)
-        //         If only 1 scheduler active
-        //             Run scheduler until done or meta thread required by other blocked threads
-        //     Release meta thread
-        //     Yield until not-idle or done
-        //     Attempt to re-acquire same meta thread
-        //         If successful
-        //             Goto 1:
-        //         Else
-        //             Notify schedulers of meta thread move
-
-        /*
-        volatile bool done = false;
-        auto doneWaiter = MakeWaiter([&] {done = true;});
-        until.AddWaiter(&doneWaiter);
-        while (!done)
+        // TODO: remove all waiters on idle schedulers
         {
+            Detail::SystemMutex::ScopedLock lock(stateLock);
+            std::for_each(idleSchedulers.begin(), idleSchedulers.end(), [&] (SchedulerState* ss)
+            {
+                if (!ss->hasWorkCondition->RemoveWaiter(ss->hasWorkWaiter))
+                {
+                    // Failed to remove waiter. Must wait until callback has finished
+                    while (ss->lastState == ISchedulerContext::State::Idle)
+                        stateChanged.Wait(stateLock);
+                }
+            });
         }
-        */
+
+        if (!oldAffinity.IsEmpty())
+            SetCurrentThreadAffinity(oldAffinity);
+
+        ReleaseMetaThread(std::move(metaThread));
     }
 
     CRUNCH_ALWAYS_INLINE void Release()

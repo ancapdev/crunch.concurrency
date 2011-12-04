@@ -17,7 +17,11 @@ struct CRUNCH_NOVTABLE IWaitable
     template<typename F>
     CRUNCH_MUST_CHECK_RESULT bool AddWaiter(F callback)
     {
-        return AddWaiter(Waiter::Create(callback, true));
+        auto waiter = Waiter::Create(callback, true);
+        if (AddWaiter(waiter))
+            return true;
+        waiter->Destroy();
+        return false;
     }
 
     template<typename F>

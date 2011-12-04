@@ -34,6 +34,7 @@ vpm_add_library(crunch_concurrency_lib
   include/crunch/concurrency/spin_barrier.hpp
   include/crunch/concurrency/thread.hpp
   include/crunch/concurrency/thread_local.hpp
+  include/crunch/concurrency/thread_pool.hpp
   include/crunch/concurrency/versioned_data.hpp
   include/crunch/concurrency/wait_mode.hpp
   include/crunch/concurrency/waitable.hpp
@@ -57,6 +58,7 @@ vpm_add_library(crunch_concurrency_lib
   source/thread.cpp
   source/thread_data.hpp
   source/thread_data.cpp
+  source/thread_pool.cpp
   source/waiter.cpp
   source/waiter_list.cpp
   source/platform/${PLATFORM_NAME}/processor_affinity.cpp
@@ -91,6 +93,7 @@ if(NOT CRUNCH_NO_TESTS)
     test/mutex_tests.cpp
     test/processor_topology_tests.cpp
     test/semaphore_tests.cpp
+    test/thread_pool_tests.cpp
     test/thread_tests.cpp)
 
   target_link_libraries(crunch_concurrency_test

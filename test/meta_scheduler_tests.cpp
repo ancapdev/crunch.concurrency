@@ -87,7 +87,7 @@ BOOST_AUTO_TEST_CASE(RunTest)
     Event doneEvent;
     Thread expireThread([&]
     {
-        ThreadSleep(Duration::Seconds(2));
+        ThreadSleep(Duration::Milliseconds(200));
         doneEvent.Set();
     });
 

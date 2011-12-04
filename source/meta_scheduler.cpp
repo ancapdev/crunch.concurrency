@@ -18,6 +18,98 @@
 
 namespace Crunch { namespace Concurrency {
 
+namespace
+{
+    void WaitForImpl(Detail::SystemSemaphore& waitSemaphore, IWaitable& waitable, WaitMode waitMode)
+    {
+        if (waitable.AddWaiter([&] { waitSemaphore.Post(); }))
+            waitSemaphore.SpinWait(waitMode.spinCount);
+    }
+
+    void WaitForAllImpl(Detail::SystemSemaphore& waitSemaphore, IWaitable** waitables, std::size_t count, WaitMode waitMode)
+    {
+        IWaitable** unordered = CRUNCH_STACK_ALLOC_T(IWaitable*, count);
+        IWaitable** ordered = CRUNCH_STACK_ALLOC_T(IWaitable*, count);
+        std::size_t orderedCount = 0;
+        std::size_t unorderedCount = 0;
+
+        for (std::size_t i = 0; i < count; ++i)
+        {
+            if (waitables[i]->IsOrderDependent())
+                ordered[orderedCount++] = waitables[i];
+            else
+                unordered[unorderedCount++] = waitables[i];
+        }
+
+        if (orderedCount != 0)
+        {
+            std::sort(ordered, ordered + orderedCount);
+
+            // Order dependent doesn't imply fair, so we need to wait for one at a time
+            for (std::size_t i = 0; i < orderedCount; ++i)
+                WaitFor(*ordered[i], waitMode);
+        }
+
+        if (unorderedCount != 0)
+        {
+            std::size_t addedCount = 0;
+            for (std::size_t i = 0; i < unorderedCount; ++i)
+                if (waitables[i]->AddWaiter([&] { waitSemaphore.Post(); }))
+                    addedCount++;
+
+            for (std::size_t i = 0; i < addedCount; ++i)
+                waitSemaphore.SpinWait(waitMode.spinCount);
+        }
+    }
+
+    WaitForAnyResult WaitForAnyImpl(Detail::SystemSemaphore& waitSemaphore, IWaitable** waitables, std::size_t count, WaitMode waitMode)
+    {
+        auto poster = [&] { waitSemaphore.Post(); };
+        typedef Waiter::Typed<decltype(poster)> WaiterType;
+
+        WaiterType** waiters = CRUNCH_STACK_ALLOC_T(WaiterType*, count);
+
+        WaitForAnyResult signaled;
+
+        std::size_t addedCount = 0;
+        for (std::size_t i = 0; i < count; ++i)
+        {
+            waiters[i] = Waiter::Create(poster, false);
+            if (!waitables[i]->AddWaiter(waiters[i]))
+            {
+                waiters[i]->Destroy();
+                signaled.push_back(waitables[i]);
+                break;
+            }
+            addedCount++;
+        }
+
+        // If no waitable synchronously ready, wait for one to become ready
+        if (addedCount == count)
+            waitSemaphore.SpinWait(waitMode.spinCount);
+
+        // Try to remove waiters for all waitables
+        for (std::size_t i = 0; i < addedCount; ++i)
+        {
+            if (!waitables[i]->RemoveWaiter(waiters[i]))
+                signaled.push_back(waitables[i]);
+        }
+
+        // Wait for any waiters that weren't removed. They should be in-flight callbacks.
+        // We've already waited for 1 either in SpinWait or by synchronous ready, so start count from 1
+        CRUNCH_ASSERT(signaled.size() >= 1);
+        for (std::size_t i = 1; i < signaled.size(); ++i)
+            waitSemaphore.SpinWait(waitMode.spinCount);
+
+        // Destroy all waiters
+        // TODO: Could bulk free. Callback shouldn't require destruction, so only list of waiters need to be reclaimed.
+        for (std::size_t i = 0; i < addedCount; ++i)
+            waiters[i]->Destroy();
+
+        return signaled;
+    }
+}
+
 RunMode::RunMode(Type type, std::uint32_t count, Duration duration)
     : mType(type)
     , mCount(count)
@@ -420,85 +512,12 @@ stopped:
 
     CRUNCH_ALWAYS_INLINE void WaitForAll(IWaitable** waitables, std::size_t count, WaitMode waitMode)
     {
-        IWaitable** unordered = CRUNCH_STACK_ALLOC_T(IWaitable*, count);
-        IWaitable** ordered = CRUNCH_STACK_ALLOC_T(IWaitable*, count);
-        std::size_t orderedCount = 0;
-        std::size_t unorderedCount = 0;
-
-        for (std::size_t i = 0; i < count; ++i)
-        {
-            if (waitables[i]->IsOrderDependent())
-                ordered[orderedCount++] = waitables[i];
-            else
-                unordered[unorderedCount++] = waitables[i];
-        }
-
-        if (orderedCount != 0)
-        {
-            std::sort(ordered, ordered + orderedCount);
-
-            // Order dependent doesn't imply fair, so we need to wait for one at a time
-            for (std::size_t i = 0; i < orderedCount; ++i)
-                WaitFor(*ordered[i], waitMode);
-        }
-
-        if (unorderedCount != 0)
-        {
-            std::size_t addedCount = 0;
-            for (std::size_t i = 0; i < unorderedCount; ++i)
-                if (waitables[i]->AddWaiter([&] { mWaitSemaphore.Post(); }))
-                    addedCount++;
-
-            for (std::size_t i = 0; i < addedCount; ++i)
-                mWaitSemaphore.SpinWait(waitMode.spinCount);
-        }
+        WaitForAllImpl(mWaitSemaphore, waitables, count, waitMode);
     }
 
     WaitForAnyResult WaitForAny(IWaitable** waitables, std::size_t count, WaitMode waitMode)
     {
-        auto poster = [&] { mWaitSemaphore.Post(); };
-        typedef Waiter::Typed<decltype(poster)> WaiterType;
-
-        WaiterType** waiters = CRUNCH_STACK_ALLOC_T(WaiterType*, count);
-
-        WaitForAnyResult signaled;
-
-        std::size_t addedCount = 0;
-        for (std::size_t i = 0; i < count; ++i)
-        {
-            waiters[i] = Waiter::Create(poster, false);
-            if (!waitables[i]->AddWaiter(waiters[i]))
-            {
-                waiters[i]->Destroy();
-                signaled.push_back(waitables[i]);
-                break;
-            }
-            addedCount++;
-        }
-
-        // If no waitable synchronously ready, wait for one to become ready
-        if (addedCount == count)
-            mWaitSemaphore.SpinWait(waitMode.spinCount);
-
-        // Try to remove waiters for all waitables
-        for (std::size_t i = 0; i < addedCount; ++i)
-        {
-            if (!waitables[i]->RemoveWaiter(waiters[i]))
-                signaled.push_back(waitables[i]);
-        }
-
-        // Wait for any waiters that weren't removed. They should be in-flight callbacks.
-        // We've already waited for 1 either in SpinWait or by synchronous ready, so start count from 1
-        CRUNCH_ASSERT(signaled.size() >= 1);
-        for (std::size_t i = 1; i < signaled.size(); ++i)
-            mWaitSemaphore.SpinWait(waitMode.spinCount);
-
-        // Destroy all waiters
-        // TODO: Could bulk free. Callback shouldn't require destruction, so only list of waiters need to be reclaimed.
-        for (std::size_t i = 0; i < addedCount; ++i)
-            waiters[i]->Destroy();
-
-        return signaled;
+        return WaitForAnyImpl(mWaitSemaphore, waitables, count, waitMode);
     }
 
 private:
@@ -560,20 +579,41 @@ MetaScheduler::Context& MetaScheduler::AcquireContext()
 
 void WaitFor(IWaitable& waitable, WaitMode waitMode)
 {
-    CRUNCH_ASSERT_MSG(MetaScheduler::tCurrentContext != nullptr, "No context on current thread");
-    MetaScheduler::tCurrentContext->WaitFor(waitable, waitMode);
+    if (MetaScheduler::tCurrentContext)
+    {
+        MetaScheduler::tCurrentContext->WaitFor(waitable, waitMode);
+    }
+    else
+    {
+        Detail::SystemSemaphore waitSemaphore(0);
+        WaitForImpl(waitSemaphore, waitable, waitMode);
+    }
 }
 
 void WaitForAll(IWaitable** waitables, std::size_t count, WaitMode waitMode)
 {
-    CRUNCH_ASSERT_MSG(MetaScheduler::tCurrentContext != nullptr, "No context on current thread");
-    MetaScheduler::tCurrentContext->WaitForAll(waitables, count, waitMode);
+    if (MetaScheduler::tCurrentContext)
+    {
+        MetaScheduler::tCurrentContext->WaitForAll(waitables, count, waitMode);
+    }
+    else
+    {
+        Detail::SystemSemaphore waitSemaphore(0);
+        WaitForAllImpl(waitSemaphore, waitables, count, waitMode);
+    }
 }
 
 WaitForAnyResult WaitForAny(IWaitable** waitables, std::size_t count, WaitMode waitMode)
 {
-    CRUNCH_ASSERT_MSG(MetaScheduler::tCurrentContext != nullptr, "No context on current thread");
-    return MetaScheduler::tCurrentContext->WaitForAny(waitables, count, waitMode);
+    if (MetaScheduler::tCurrentContext)
+    {
+        return MetaScheduler::tCurrentContext->WaitForAny(waitables, count, waitMode);
+    }
+    else
+    {
+        Detail::SystemSemaphore waitSemaphore(0);
+        return WaitForAnyImpl(waitSemaphore, waitables, count, waitMode);
+    }
 }
 
 }}

@@ -50,7 +50,6 @@ private:
 // - task scheduler
 // - io_service scheduler
 // - fiber / coroutine scheduler
-// TODO: Add support for threads that haven't joined the scheduler to call WaitForXXX
 class MetaScheduler
 {
 public:

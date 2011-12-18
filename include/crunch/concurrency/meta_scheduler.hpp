@@ -5,6 +5,7 @@
 #define CRUNCH_CONCURRENCY_META_SCHEDULER_HPP
 
 #include "crunch/base/duration.hpp"
+#include "crunch/concurrency/api.hpp"
 #include "crunch/concurrency/processor_affinity.hpp"
 #include "crunch/concurrency/scheduler.hpp"
 #include "crunch/concurrency/thread_local.hpp"
@@ -19,7 +20,7 @@
 
 namespace Crunch { namespace Concurrency {
 
-class RunMode
+class CRUNCH_CONCURRENCY_API RunMode
 {
 public:
     static RunMode Disabled();
@@ -58,24 +59,24 @@ public:
     class MetaThreadHandle {};
     typedef std::shared_ptr<IScheduler> SchedulerPtr;
 
-    MetaScheduler(Config const& config);
-    ~MetaScheduler();
+    CRUNCH_CONCURRENCY_API MetaScheduler(Config const& config);
+    CRUNCH_CONCURRENCY_API ~MetaScheduler();
 
-    MetaThreadHandle CreateMetaThread(MetaThreadConfig const& config);
+    CRUNCH_CONCURRENCY_API MetaThreadHandle CreateMetaThread(MetaThreadConfig const& config);
 
-    class Context
+    class CRUNCH_CONCURRENCY_API Context
     {
     public:
         void Run(IWaitable& until);
         void Release();
     };
 
-    Context& AcquireContext();
+    CRUNCH_CONCURRENCY_API Context& AcquireContext();
 
 private:
-    friend void WaitFor(IWaitable&, WaitMode);
-    friend void WaitForAll(IWaitable**, std::size_t, WaitMode);
-    friend WaitForAnyResult WaitForAny(IWaitable**, std::size_t, WaitMode);
+    friend CRUNCH_CONCURRENCY_API void WaitFor(IWaitable&, WaitMode);
+    friend CRUNCH_CONCURRENCY_API void WaitForAll(IWaitable**, std::size_t, WaitMode);
+    friend CRUNCH_CONCURRENCY_API WaitForAnyResult WaitForAny(IWaitable**, std::size_t, WaitMode);
 
     friend class Config;
 
@@ -113,7 +114,7 @@ private:
 class MetaScheduler::Config
 {
 public:
-    void AddScheduler(SchedulerPtr const& scheduler, std::uint32_t id, RunMode defaultRunMode);
+    CRUNCH_CONCURRENCY_API void AddScheduler(SchedulerPtr const& scheduler, std::uint32_t id, RunMode defaultRunMode);
 
 private:
     friend class MetaScheduler;
@@ -124,8 +125,8 @@ private:
 class MetaScheduler::MetaThreadConfig
 {
 public:
-    void SetRunModeOverride(std::uint32_t schedulerId, RunMode runMode);
-    void SetProcessorAffinity(ProcessorAffinity const& affinity) { mProcessorAffinity = affinity; }
+    CRUNCH_CONCURRENCY_API void SetRunModeOverride(std::uint32_t schedulerId, RunMode runMode);
+    CRUNCH_CONCURRENCY_API void SetProcessorAffinity(ProcessorAffinity const& affinity) { mProcessorAffinity = affinity; }
 
 private:
     friend class MetaScheduler;

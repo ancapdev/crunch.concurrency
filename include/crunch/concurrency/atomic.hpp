@@ -76,7 +76,7 @@ public:
 
     ValueType operator=(ValueType value) volatile
     {
-        Store();
+        Store(value);
         return value;
     }
 

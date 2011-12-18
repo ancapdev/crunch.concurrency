@@ -6,6 +6,7 @@
 
 #include "crunch/base/noncopyable.hpp"
 #include "crunch/base/result_of.hpp"
+#include "crunch/concurrency/api.hpp"
 #include "crunch/concurrency/future.hpp"
 #include "crunch/concurrency/promise.hpp"
 #include "crunch/concurrency/thread.hpp"
@@ -22,20 +23,20 @@ namespace Crunch { namespace Concurrency {
 class ThreadPool : NonCopyable
 {
 public:
-    ThreadPool(std::uint32_t maxThreadCount);
-    ~ThreadPool();
+    CRUNCH_CONCURRENCY_API ThreadPool(std::uint32_t maxThreadCount);
+    CRUNCH_CONCURRENCY_API ~ThreadPool();
 
     template<typename F>
     Future<typename ResultOf<F>::Type> Post(F f);
 
-    std::uint32_t GetThreadCount() const;
+    CRUNCH_CONCURRENCY_API std::uint32_t GetThreadCount() const;
 
 private:
     template<typename F, typename R> struct Runner;
 
     typedef std::function<void ()> WorkItem;
 
-    void AddWorkItem(WorkItem&& work);
+    CRUNCH_CONCURRENCY_API void AddWorkItem(WorkItem&& work);
 
     std::uint32_t const mMaxThreadCount;
 

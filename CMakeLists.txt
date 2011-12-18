@@ -13,6 +13,7 @@ if(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "x86" OR
 endif()
     
 vpm_add_library(crunch_concurrency_lib
+  include/crunch/concurrency/api.hpp
   include/crunch/concurrency/atomic.hpp
   include/crunch/concurrency/constant_backoff.hpp
   include/crunch/concurrency/event.hpp

@@ -5,6 +5,7 @@
 #define CRUNCH_CONCURRENCY_EVENT_HPP
 
 #include "crunch/base/override.hpp"
+#include "crunch/concurrency/api.hpp"
 #include "crunch/concurrency/detail/waiter_list.hpp"
 
 namespace Crunch { namespace Concurrency {
@@ -14,10 +15,10 @@ class Event : public IWaitable
 public:
     using IWaitable::AddWaiter;
 
-    Event(bool initialState = false);
+    CRUNCH_CONCURRENCY_API Event(bool initialState = false);
 
     // Locked with RemoveWaiter
-    void Set();
+    CRUNCH_CONCURRENCY_API void Set();
 
     // Wait free
     void Reset();
@@ -26,13 +27,13 @@ public:
     bool IsSet() const;
 
     // Lock free
-    virtual bool AddWaiter(Waiter* waiter) CRUNCH_OVERRIDE;
+    CRUNCH_CONCURRENCY_API virtual bool AddWaiter(Waiter* waiter) CRUNCH_OVERRIDE;
 
     // Locked with RemoveWaiter and Set
-    virtual bool RemoveWaiter(Waiter* waiter) CRUNCH_OVERRIDE;
+    CRUNCH_CONCURRENCY_API virtual bool RemoveWaiter(Waiter* waiter) CRUNCH_OVERRIDE;
 
     // Constant
-    virtual bool IsOrderDependent() const CRUNCH_OVERRIDE;
+    CRUNCH_CONCURRENCY_API virtual bool IsOrderDependent() const CRUNCH_OVERRIDE;
 
 private:
     static std::uint64_t const EVENT_SET_BIT = Detail::WaiterList::USER_FLAG_BIT;

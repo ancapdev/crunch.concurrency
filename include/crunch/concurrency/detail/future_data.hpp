@@ -6,6 +6,7 @@
 
 #include "crunch/base/override.hpp"
 #include "crunch/base/platform.hpp"
+#include "crunch/concurrency/api.hpp"
 #include "crunch/concurrency/atomic.hpp"
 #include "crunch/concurrency/event.hpp"
 
@@ -25,7 +26,7 @@ public:
     using Event::AddWaiter;
     using Event::RemoveWaiter;
 
-    FutureDataBase(std::uint32_t refCount = 0) : mRefCount(refCount, MEMORY_ORDER_RELEASE) {}
+    CRUNCH_CONCURRENCY_API FutureDataBase(std::uint32_t refCount = 0) : mRefCount(refCount, MEMORY_ORDER_RELEASE) {}
 
     void SetException(std::exception_ptr const& exception)
     {
@@ -60,7 +61,7 @@ protected:
     friend void Release(FutureDataBase*);
 
     // Destroy rather than just virtual desctructor so we can use custom allocation
-    virtual void Destroy();
+    CRUNCH_CONCURRENCY_API virtual void Destroy();
 
 #if defined (CRUNCH_PLATFORM_WIN32)
     __declspec(noreturn) void RethrowException() { std::rethrow_exception(*mException); }

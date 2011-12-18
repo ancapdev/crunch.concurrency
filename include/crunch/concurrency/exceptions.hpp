@@ -5,16 +5,17 @@
 #define CRUNCH_CONCURRENCY_EXCEPTIONS_HPP
 
 #include "crunch/base/exception.hpp"
+#include "crunch/concurrency/api.hpp"
 
 namespace Crunch { namespace Concurrency {
 
-class ThreadCanceled : public Exception
+class CRUNCH_CONCURRENCY_API ThreadCanceled : public Exception
 {
 public:
     ThreadCanceled();
 };
 
-class ThreadResourceError : public Exception
+class CRUNCH_CONCURRENCY_API ThreadResourceError : public Exception
 {
 public:
     ThreadResourceError();

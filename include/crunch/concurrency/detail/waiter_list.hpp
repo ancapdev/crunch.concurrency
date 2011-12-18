@@ -4,6 +4,7 @@
 #ifndef CRUNCH_CONCURRENCY_DETAIL_WAITER_LIST_HPP
 #define CRUNCH_CONCURRENCY_DETAIL_WAITER_LIST_HPP
 
+#include "crunch/concurrency/api.hpp"
 #include "crunch/concurrency/atomic.hpp"
 #include "crunch/concurrency/waitable.hpp"
 
@@ -48,7 +49,7 @@ struct WaiterList : public Atomic<std::uint64_t>
         And(~LOCK_BIT, MEMORY_ORDER_RELEASE);
     }
 
-    bool RemoveWaiter(Waiter* waiter);
+    CRUNCH_CONCURRENCY_API bool RemoveWaiter(Waiter* waiter);
 };
 
 }}}

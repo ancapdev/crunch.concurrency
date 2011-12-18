@@ -6,13 +6,14 @@
 
 #include "crunch/base/novtable.hpp"
 #include "crunch/base/must_check_result.hpp"
+#include "crunch/concurrency/api.hpp"
 #include "crunch/concurrency/waiter.hpp"
 #include "crunch/concurrency/wait_mode.hpp"
 #include "crunch/containers/small_vector.hpp"
 
 namespace Crunch { namespace Concurrency {
 
-struct CRUNCH_NOVTABLE IWaitable
+struct CRUNCH_CONCURRENCY_API CRUNCH_NOVTABLE IWaitable
 {
     template<typename F>
     CRUNCH_MUST_CHECK_RESULT bool AddWaiter(F callback)
@@ -44,9 +45,9 @@ struct CRUNCH_NOVTABLE IWaitable
 /// List of signaled waitables
 typedef Containers::SmallVector<IWaitable*, 16> WaitForAnyResult;
 
-void WaitFor(IWaitable& waitable, WaitMode waitMode = WaitMode::Run());
-void WaitForAll(IWaitable** waitables, std::size_t count, WaitMode waitMode = WaitMode::Run());
-WaitForAnyResult WaitForAny(IWaitable** waitables, std::size_t count, WaitMode waitMode = WaitMode::Run());
+CRUNCH_CONCURRENCY_API void WaitFor(IWaitable& waitable, WaitMode waitMode = WaitMode::Run());
+CRUNCH_CONCURRENCY_API void WaitForAll(IWaitable** waitables, std::size_t count, WaitMode waitMode = WaitMode::Run());
+CRUNCH_CONCURRENCY_API WaitForAnyResult WaitForAny(IWaitable** waitables, std::size_t count, WaitMode waitMode = WaitMode::Run());
 
 }}
 

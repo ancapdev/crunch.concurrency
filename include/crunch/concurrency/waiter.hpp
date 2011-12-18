@@ -6,6 +6,7 @@
 
 #include "crunch/base/assert.hpp"
 #include "crunch/base/noncopyable.hpp"
+#include "crunch/concurrency/api.hpp"
 #include "crunch/concurrency/thread_local.hpp"
 
 #include <memory>
@@ -13,7 +14,7 @@
 
 namespace Crunch { namespace Concurrency {
 
-class Waiter : NonCopyable
+class CRUNCH_CONCURRENCY_API Waiter : NonCopyable
 {
 public:
     template<typename F>
@@ -42,8 +43,6 @@ private:
 
     Callback mCallback;
     StorageType mStorage;
-
-    static CRUNCH_THREAD_LOCAL Waiter* tWaiterFreeList;
 };
 
 template<typename F>
@@ -118,25 +117,6 @@ inline void Waiter::Notify()
 inline Waiter::Waiter(Callback callback)
     : mCallback(callback)
 {}
-
-inline void* Waiter::Allocate()
-{
-    Waiter* localFree = tWaiterFreeList;
-    if (localFree)
-    {
-        tWaiterFreeList = localFree->next;
-        return localFree;
-    }
-    return AllocateGlobal();
-}
-
-inline void Waiter::Free(void* allocation)
-{
-    // TODO: free back to global list
-    Waiter* node = reinterpret_cast<Waiter*>(allocation);
-    node->next = tWaiterFreeList;
-    tWaiterFreeList = node;
-}
 
 }}
 

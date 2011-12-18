@@ -5,6 +5,7 @@
 #define CRUNCH_CONCURRENCY_DETAIL_SYSTEM_EVENT_HPP
 
 #include "crunch/base/platform.hpp"
+#include "crunch/concurrency/api.hpp"
 
 #if defined (CRUNCH_PLATFORM_WIN32)
 #   include "crunch/base/platform/win32/wintypes.hpp"
@@ -16,7 +17,7 @@
 
 namespace Crunch { namespace Concurrency { namespace Detail {
 
-class SystemEvent
+class CRUNCH_CONCURRENCY_API SystemEvent
 {
 public:
     SystemEvent(bool initialState = false);

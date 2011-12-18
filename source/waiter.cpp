@@ -88,9 +88,9 @@ namespace
     };
 
     WaiterAllocator gWaiterAllocator;
-}
 
-CRUNCH_THREAD_LOCAL Waiter* Waiter::tWaiterFreeList = 0;
+    CRUNCH_THREAD_LOCAL Waiter* tWaiterFreeList = nullptr;
+}
 
 void* Waiter::AllocateGlobal()
 {
@@ -100,6 +100,25 @@ void* Waiter::AllocateGlobal()
 void Waiter::FreeGlobal(void* allocation)
 {
     return gWaiterAllocator.Free(allocation);
+}
+
+void* Waiter::Allocate()
+{
+    Waiter* localFree = tWaiterFreeList;
+    if (localFree)
+    {
+        tWaiterFreeList = localFree->next;
+        return localFree;
+    }
+    return AllocateGlobal();
+}
+
+void Waiter::Free(void* allocation)
+{
+    // TODO: free back to global list
+    Waiter* node = reinterpret_cast<Waiter*>(allocation);
+    node->next = tWaiterFreeList;
+    tWaiterFreeList = node;
 }
 
 }}

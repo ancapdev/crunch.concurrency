@@ -4,12 +4,14 @@
 #ifndef CRUNCH_CONCURRENCY_PROCESSOR_TOPOLOGY_HPP
 #define CRUNCH_CONCURRENCY_PROCESSOR_TOPOLOGY_HPP
 
+#include "crunch/concurrency/api.hpp"
+
 #include <cstdint>
 #include <vector>
 
 namespace Crunch { namespace Concurrency {
 
-std::uint32_t GetSystemNumProcessors();
+CRUNCH_CONCURRENCY_API std::uint32_t GetSystemNumProcessors();
 
 class ProcessorTopology
 {
@@ -24,12 +26,12 @@ public:
 
     typedef std::vector<Processor> ProcessorList;
 
-    ProcessorTopology();
+    CRUNCH_CONCURRENCY_API ProcessorTopology();
 
-    ProcessorList const& GetProcessors() const { return mProcessors; }
+    CRUNCH_CONCURRENCY_API ProcessorList const& GetProcessors() const { return mProcessors; }
 
-    ProcessorList GetProcessorsOnCore(std::uint32_t coreId);
-    ProcessorList GetProcessorsOnPackage(std::uint32_t packageId);
+    CRUNCH_CONCURRENCY_API ProcessorList GetProcessorsOnCore(std::uint32_t coreId);
+    CRUNCH_CONCURRENCY_API ProcessorList GetProcessorsOnPackage(std::uint32_t packageId);
 
 private:
     ProcessorList mProcessors;

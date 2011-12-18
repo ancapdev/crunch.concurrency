@@ -6,6 +6,7 @@
 
 #include "crunch/base/platform.hpp"
 #include "crunch/base/noncopyable.hpp"
+#include "crunch/concurrency/api.hpp"
 
 #if defined (CRUNCH_PLATFORM_WIN32)
 #   include "crunch/base/platform/win32/wintypes.hpp"
@@ -81,54 +82,54 @@ public:
 
     Thread() {}
 
-    ~Thread();
+    CRUNCH_CONCURRENCY_API ~Thread();
 
     template<typename F>
     explicit Thread(F f);
 
-    Thread(Thread&& rhs);
+    CRUNCH_CONCURRENCY_API Thread(Thread&& rhs);
 
-    Thread& operator = (Thread&& rhs);
+    CRUNCH_CONCURRENCY_API Thread& operator = (Thread&& rhs);
 
-    ThreadId GetId() const;
+    CRUNCH_CONCURRENCY_API ThreadId GetId() const;
 
-    bool IsJoinable() const;
+    CRUNCH_CONCURRENCY_API bool IsJoinable() const;
 
-    void Join();
+    CRUNCH_CONCURRENCY_API void Join();
 
-    void Detach();
+    CRUNCH_CONCURRENCY_API void Detach();
 
-    void Cancel();
+    CRUNCH_CONCURRENCY_API void Cancel();
 
-    bool IsCancellationRequested() const;
+    CRUNCH_CONCURRENCY_API bool IsCancellationRequested() const;
 
-    PlatformHandleType GetPlatformHandle() const;
+    CRUNCH_CONCURRENCY_API PlatformHandleType GetPlatformHandle() const;
 
-    void operator () ();
+    CRUNCH_CONCURRENCY_API void operator () ();
 
 private:
-    friend void SetThreadCancellationPolicy(bool);
-    friend void ThreadCancellationPoint();
-    friend bool IsThreadCancellationEnabled();
-    friend bool IsThreadCancellationRequested();
+    friend CRUNCH_CONCURRENCY_API void SetThreadCancellationPolicy(bool);
+    friend CRUNCH_CONCURRENCY_API void ThreadCancellationPoint();
+    friend CRUNCH_CONCURRENCY_API bool IsThreadCancellationEnabled();
+    friend CRUNCH_CONCURRENCY_API bool IsThreadCancellationRequested();
 
     struct Data;
     typedef std::shared_ptr<Data> DataPtr;
 
-    void Create(std::function<void ()>&& f);
+    CRUNCH_CONCURRENCY_API void Create(std::function<void ()>&& f);
 
     DataPtr mData;
 };
 
-ThreadId GetThreadId();
+CRUNCH_CONCURRENCY_API ThreadId GetThreadId();
 
-void SetThreadCancellationPolicy(bool enableCancellation);
+CRUNCH_CONCURRENCY_API void SetThreadCancellationPolicy(bool enableCancellation);
 
-void ThreadCancellationPoint();
+CRUNCH_CONCURRENCY_API void ThreadCancellationPoint();
 
-bool IsThreadCancellationEnabled();
+CRUNCH_CONCURRENCY_API bool IsThreadCancellationEnabled();
 
-bool IsThreadCancellationRequested();
+CRUNCH_CONCURRENCY_API bool IsThreadCancellationRequested();
 
 template<bool EnableCancellation>
 class ScopedThreadCancellationPolicy : NonCopyable

@@ -5,6 +5,7 @@
 #define CRUNCH_CONCURRENCY_MUTEX_HPP
 
 #include "crunch/base/override.hpp"
+#include "crunch/concurrency/api.hpp"
 #include "crunch/concurrency/detail/waiter_list.hpp"
 
 #include <cstdint>
@@ -17,17 +18,17 @@ class Mutex : public IWaitable
 public:
     using IWaitable::AddWaiter;
 
-    Mutex(std::uint32_t spinCount = 0);
+    CRUNCH_CONCURRENCY_API Mutex(std::uint32_t spinCount = 0);
 
-    void Lock();
+    CRUNCH_CONCURRENCY_API void Lock();
     
-    void Unlock();
+    CRUNCH_CONCURRENCY_API void Unlock();
 
-    bool IsLocked() const;
+    CRUNCH_CONCURRENCY_API bool IsLocked() const;
 
-    virtual bool AddWaiter(Waiter* waiter) CRUNCH_OVERRIDE;
-    virtual bool RemoveWaiter(Waiter* waiter) CRUNCH_OVERRIDE;
-    virtual bool IsOrderDependent() const CRUNCH_OVERRIDE;
+    CRUNCH_CONCURRENCY_API virtual bool AddWaiter(Waiter* waiter) CRUNCH_OVERRIDE;
+    CRUNCH_CONCURRENCY_API virtual bool RemoveWaiter(Waiter* waiter) CRUNCH_OVERRIDE;
+    CRUNCH_CONCURRENCY_API virtual bool IsOrderDependent() const CRUNCH_OVERRIDE;
 
 private:
     // Set when free rather than locked so we don't have to strip off

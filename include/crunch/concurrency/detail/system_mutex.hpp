@@ -5,6 +5,7 @@
 #define CRUNCH_CONCURRENCY_DETAIL_SYSTEM_MUTEX_HPP
 
 #include "crunch/base/platform.hpp"
+#include "crunch/concurrency/api.hpp"
 #include "crunch/concurrency/lock_guard.hpp"
 
 #if defined (CRUNCH_PLATFORM_WIN32)
@@ -17,7 +18,7 @@
 
 namespace Crunch { namespace Concurrency { namespace Detail {
 
-class SystemMutex
+class CRUNCH_CONCURRENCY_API SystemMutex
 {
 public:
     typedef LockGuard<SystemMutex> ScopedLock;

@@ -4,12 +4,17 @@
 include(configure.cmake)
 
 if(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "x86" OR
-    ${CMAKE_SYSTEM_PROCESSOR} STREQUAL "x86_64")
+   ${CMAKE_SYSTEM_PROCESSOR} STREQUAL "x86_64")
+  if(APPLE)
+    set(_atomicPlatform "linux")
+  else()
+    set(_atomicPlatform ${PLATFORM_NAME})
+  endif()
   set(_platformFiles
-    include/crunch/concurrency/platform/${PLATFORM_NAME}/atomic.hpp
-    include/crunch/concurrency/platform/${PLATFORM_NAME}/atomic_ops_x86.hpp
-    include/crunch/concurrency/platform/${PLATFORM_NAME}/atomic_storage.hpp
-    include/crunch/concurrency/platform/${PLATFORM_NAME}/atomic_word.hpp)
+    include/crunch/concurrency/platform/${_atomicPlatform}/atomic.hpp
+    include/crunch/concurrency/platform/${_atomicPlatform}/atomic_ops_x86.hpp
+    include/crunch/concurrency/platform/${_atomicPlatform}/atomic_storage.hpp
+    include/crunch/concurrency/platform/${_atomicPlatform}/atomic_word.hpp)
 endif()
     
 vpm_add_library(crunch_concurrency_lib

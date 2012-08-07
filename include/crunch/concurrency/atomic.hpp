@@ -8,7 +8,7 @@
 
 #if defined (CRUNCH_PLATFORM_WIN32)
 #   include "crunch/concurrency/platform/win32/atomic.hpp"
-#elif defined (CRUNCH_PLATFORM_LINUX)
+#elif defined (CRUNCH_PLATFORM_LINUX) || defined (CRUNCH_PLATFORM_DARWIN)
 #   include "crunch/concurrency/platform/linux/atomic.hpp"
 #endif
 
@@ -127,7 +127,7 @@ public:
 
     ValueType operator=(ValueType value) volatile
     {
-        Store();
+        Store(value);
         return value;
     }
 
@@ -146,7 +146,7 @@ public:
 
     Atomic(T value, MemoryOrder ordering = MEMORY_ORDER_SEQ_CST)
     {
-        Store(value,  ordering);
+        this->Store(value,  ordering);
     }
 };
 
@@ -268,7 +268,7 @@ public:
 
     Atomic(T value, MemoryOrder ordering = MEMORY_ORDER_SEQ_CST)
     {
-        Store(value, ordering);
+        this->Store(value, ordering);
     }
 
     T operator++() volatile
@@ -310,7 +310,7 @@ public:
 
     Atomic(T* value, MemoryOrder ordering = MEMORY_ORDER_SEQ_CST)
     {
-        Store(value, ordering);
+        this->Store(value, ordering);
     }
 
     T* Increment(MemoryOrder ordering = MEMORY_ORDER_SEQ_CST) volatile

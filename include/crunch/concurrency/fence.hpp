@@ -18,7 +18,7 @@
 #       include <Windows.h>
 #       define CRUNCH_MEMORY_FENCE() MemoryBarrier()
 #   endif
-#elif defined (CRUNCH_PLATFORM_LINUX)
+#elif defined (CRUNCH_PLATFORM_LINUX) || defined (CRUNCH_PLATFORM_DARWIN)
 #   define CRUNCH_COMPILER_FENCE() asm volatile ("" : : : "memory")
 #   define CRUNCH_MEMORY_FENCE() __sync_synchronize()
 #else

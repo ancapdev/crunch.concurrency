@@ -9,7 +9,7 @@
 
 #if defined (CRUNCH_PLATFORM_WIN32)
 #   include <type_traits>
-#elif defined (CRUNCH_PLATFORM_LINUX)
+#elif defined (CRUNCH_PLATFORM_LINUX) || defined (CRUNCH_PLATFORM_DARWIN)
 #   include <pthread.h>
 #else
 #   error "Unsupported platform"

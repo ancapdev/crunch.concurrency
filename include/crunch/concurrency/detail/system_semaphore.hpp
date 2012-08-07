@@ -12,6 +12,9 @@
 #   include "crunch/concurrency/atomic.hpp"
 #elif defined (CRUNCH_PLATFORM_LINUX)
 #   include <semaphore.h>
+#elif defined (CRUNCH_PLATFORM_DARWIN)
+#   include "crunch/concurrency/atomic.hpp"
+#   include <mach/semaphore.h>
 #else
 #   error "Unsupported platform"
 #endif
@@ -35,8 +38,11 @@ private:
 #if defined (CRUNCH_PLATFORM_WIN32)
     Atomic<std::int32_t> mCount;
     HANDLE mSemaphore;
-#else
+#elif defined (CRUNCH_PLATFORM_LINUX)
     sem_t mSemaphore;
+#elif defined (CRUNCH_PLATFORM_DARWIN)
+    Atomic<std::int32_t> mCount;
+    semaphore_t mSemaphore;
 #endif
 };
 

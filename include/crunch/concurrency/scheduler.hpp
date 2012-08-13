@@ -5,6 +5,7 @@
 #define CRUNCH_CONCURRENCY_SCHEDULER_HPP
 
 #include "crunch/base/novtable.hpp"
+#include "crunch/base/override.hpp"
 #include "crunch/base/enum_class.hpp"
 #include "crunch/concurrency/waitable.hpp"
 
@@ -15,6 +16,17 @@ struct CRUNCH_NOVTABLE IThrottler
     virtual bool ShouldYield() = 0;
 
     virtual ~IThrottler() {}
+};
+
+class NullThrottler : public IThrottler
+{
+public:
+    NullThrottler() {} // Keep GCC happy
+
+    virtual bool ShouldYield() CRUNCH_OVERRIDE
+    {
+        return false;
+    }
 };
 
 struct CRUNCH_NOVTABLE ISchedulerContext

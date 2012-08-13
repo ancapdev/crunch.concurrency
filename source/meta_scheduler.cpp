@@ -433,6 +433,7 @@ public:
                     else
                     {
                         ss->lastState = ISchedulerContext::State::Working;
+                        ++it;
                     }
                 }
                 else

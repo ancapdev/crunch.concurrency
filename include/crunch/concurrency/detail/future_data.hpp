@@ -4,6 +4,7 @@
 #ifndef CRUNCH_CONCURRENCY_DETAIL_FUTURE_DATA_HPP
 #define CRUNCH_CONCURRENCY_DETAIL_FUTURE_DATA_HPP
 
+#include "crunch/base/assert.hpp"
 #include "crunch/base/override.hpp"
 #include "crunch/base/platform.hpp"
 #include "crunch/concurrency/api.hpp"
@@ -55,6 +56,11 @@ public:
         if (!IsSet())
             WaitFor(*this);
     }
+
+    std::uint32_t GetRefCount() const
+    {
+        return mRefCount.Load(MEMORY_ORDER_RELAXED);
+    }
     
 protected:
     friend void AddRef(FutureDataBase*);
@@ -78,6 +84,7 @@ inline void AddRef(FutureDataBase* object)
 
 inline void Release(FutureDataBase* object)
 {
+    CRUNCH_ASSERT(object->mRefCount.Load() > 0);
     if (1 == object->mRefCount.Decrement())
         object->Destroy();
 }

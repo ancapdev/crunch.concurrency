@@ -31,7 +31,7 @@ BOOST_AUTO_TEST_CASE(ExceptionTest)
 {
     Promise<int> p;
     Future<int> f = p.GetFuture();
-    p.SetException(std::copy_exception(std::runtime_error("test")));
+    p.SetException(std::make_exception_ptr(std::runtime_error("test")));
 
     BOOST_CHECK(!f.HasValue());
     BOOST_CHECK(f.HasException());

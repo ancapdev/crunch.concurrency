@@ -27,6 +27,7 @@ vpm_add_library(crunch_concurrency_lib
   include/crunch/concurrency/fence.hpp
   include/crunch/concurrency/future.hpp
   include/crunch/concurrency/mpmc_lifo_list.hpp
+  include/crunch/concurrency/mpmc_lifo_queue.hpp
   include/crunch/concurrency/lock_guard.hpp
   include/crunch/concurrency/memory_order.hpp
   include/crunch/concurrency/meta_scheduler.hpp

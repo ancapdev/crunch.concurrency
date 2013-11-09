@@ -1,7 +1,7 @@
 # Copyright (c) 2011-2013, Christian Rorvik
 # Distributed under the Simplified BSD License (See accompanying file LICENSE.txt)
 
-include(configure.cmake)
+vpm_depend_self()
 
 if(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "x86" OR
    ${CMAKE_SYSTEM_PROCESSOR} STREQUAL "x86_64")
@@ -87,11 +87,12 @@ if(UNIX)
     pthread)
 endif()
 
-if(NOT CRUNCH_NO_TESTS)
+if(VPM_CURRENT_PACKAGE_IS_ROOT)
+  # Add unit tests
   vpm_set_default_version(crunch.test master)
   vpm_depend(crunch.test)
 
-  add_executable(crunch_concurrency_test
+  crunch_add_test(crunch_concurrency_test
     test/atomic_tests.cpp
     test/event_tests.cpp
     test/future_tests.cpp
@@ -104,25 +105,18 @@ if(NOT CRUNCH_NO_TESTS)
     test/thread_tests.cpp)
 
   target_link_libraries(crunch_concurrency_test
-    crunch_concurrency_lib
-    crunch_test_lib)
+    crunch_concurrency_lib)
 
-  crunch_add_test(crunch_concurrency_test)
-endif()
-
-if(NOT CRUNCH_NO_BENCHMARKS)
+  # Add benchmarks
   vpm_set_default_version(crunch.benchmarking master)
   vpm_depend(crunch.benchmarking)
 
-  add_executable(crunch_concurrency_benchmark
+  crunch_add_benchmark(crunch_concurrency_benchmark
     benchmark/atomic_benchmarks.cpp
     benchmark/event_benchmarks.cpp
     benchmark/meta_scheduler_benchmarks.cpp
     benchmark/mpmc_lifo_list_benchmarks.cpp)
 
   target_link_libraries(crunch_concurrency_benchmark
-    crunch_benchmarking_lib
     crunch_concurrency_lib)
-
-  crunch_add_benchmark(crunch_concurrency_benchmark)
 endif()

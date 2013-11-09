@@ -8,7 +8,7 @@ if(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "x86" OR
   if(APPLE)
     set(_atomicPlatform "linux")
   else()
-    set(_atomicPlatform ${PLATFORM_NAME})
+    set(_atomicPlatform ${VPM_PLATFORM_NAME})
   endif()
   set(_platformFiles
     include/crunch/concurrency/platform/${_atomicPlatform}/atomic.hpp
@@ -68,14 +68,14 @@ vpm_add_library(crunch_concurrency_lib
   source/thread_pool.cpp
   source/waiter.cpp
   source/waiter_list.cpp
-  source/platform/${PLATFORM_NAME}/processor_affinity.cpp
-  source/platform/${PLATFORM_NAME}/processor_topology.cpp
-  source/platform/${PLATFORM_NAME}/system_condition.cpp
-  source/platform/${PLATFORM_NAME}/system_event.cpp
-  source/platform/${PLATFORM_NAME}/system_mutex.cpp
-  source/platform/${PLATFORM_NAME}/system_semaphore.cpp
-  source/platform/${PLATFORM_NAME}/thread.cpp
-  source/platform/${PLATFORM_NAME}/yield.cpp
+  source/platform/${VPM_PLATFORM_NAME}/processor_affinity.cpp
+  source/platform/${VPM_PLATFORM_NAME}/processor_topology.cpp
+  source/platform/${VPM_PLATFORM_NAME}/system_condition.cpp
+  source/platform/${VPM_PLATFORM_NAME}/system_event.cpp
+  source/platform/${VPM_PLATFORM_NAME}/system_mutex.cpp
+  source/platform/${VPM_PLATFORM_NAME}/system_semaphore.cpp
+  source/platform/${VPM_PLATFORM_NAME}/thread.cpp
+  source/platform/${VPM_PLATFORM_NAME}/yield.cpp
   ${_platformFiles})
 
 target_link_libraries(crunch_concurrency_lib

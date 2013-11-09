@@ -1,9 +1,9 @@
-# Copyright (c) 2011, Christian Rorvik
+# Copyright (c) 2011-2013, Christian Rorvik
 # Distributed under the Simplified BSD License (See accompanying file LICENSE.txt)
 
 vpm_set_default_versions(
-  crunch.base trunk
-  crunch.containers trunk)
+  crunch.base master
+  crunch.containers master)
 
 vpm_depend(
   crunch.base

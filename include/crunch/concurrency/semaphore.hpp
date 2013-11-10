@@ -21,8 +21,8 @@ public:
 
     CRUNCH_CONCURRENCY_API void Post();
 
-    CRUNCH_CONCURRENCY_API virtual bool AddWaiter(Waiter* waiter) CRUNCH_OVERRIDE;
-    CRUNCH_CONCURRENCY_API virtual bool RemoveWaiter(Waiter* waiter) CRUNCH_OVERRIDE;
+    CRUNCH_CONCURRENCY_API CRUNCH_MUST_CHECK_RESULT virtual bool AddWaiter(Waiter* waiter) CRUNCH_OVERRIDE;
+    CRUNCH_CONCURRENCY_API CRUNCH_MUST_CHECK_RESULT virtual bool RemoveWaiter(Waiter* waiter) CRUNCH_OVERRIDE;
     CRUNCH_CONCURRENCY_API virtual bool IsOrderDependent() const CRUNCH_OVERRIDE;
 
 private:

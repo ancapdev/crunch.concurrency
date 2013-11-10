@@ -27,10 +27,10 @@ public:
     bool IsSet() const;
 
     // Lock free
-    CRUNCH_CONCURRENCY_API virtual bool AddWaiter(Waiter* waiter) CRUNCH_OVERRIDE;
+    CRUNCH_CONCURRENCY_API CRUNCH_MUST_CHECK_RESULT virtual bool AddWaiter(Waiter* waiter) CRUNCH_OVERRIDE;
 
     // Locked with RemoveWaiter and Set
-    CRUNCH_CONCURRENCY_API virtual bool RemoveWaiter(Waiter* waiter) CRUNCH_OVERRIDE;
+    CRUNCH_CONCURRENCY_API CRUNCH_MUST_CHECK_RESULT virtual bool RemoveWaiter(Waiter* waiter) CRUNCH_OVERRIDE;
 
     // Constant
     CRUNCH_CONCURRENCY_API virtual bool IsOrderDependent() const CRUNCH_OVERRIDE;
